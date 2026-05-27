@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oruga Cowork — Sistema de Reservas</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f8fafc; color: #1e293b; }
+
+  .page { max-width: 800px; margin: 0 auto; padding: 40px 48px; background: white; }
+
+  /* Header */
+  .header { background: #0a2744; color: white; padding: 36px 48px; border-radius: 16px; margin-bottom: 36px; display: flex; justify-content: space-between; align-items: center; }
+  .header-left h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+  .header-left p { color: #c5e84a; font-size: 14px; margin-top: 4px; font-weight: 500; }
+  .badge-live { background: #c5e84a; color: #0a2744; font-size: 11px; font-weight: 700; padding: 6px 14px; border-radius: 100px; letter-spacing: 0.5px; }
+
+  /* URL Box */
+  .url-box { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 16px 20px; margin-bottom: 32px; display: flex; align-items: center; gap: 12px; }
+  .url-box .dot { width: 10px; height: 10px; background: #22c55e; border-radius: 50%; flex-shrink: 0; }
+  .url-box .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #16a34a; font-weight: 700; margin-bottom: 2px; }
+  .url-box .url { font-size: 14px; font-weight: 600; color: #166534; word-break: break-all; }
+
+  /* Section */
+  .section { margin-bottom: 32px; }
+  .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
+  .section-h2 { font-size: 18px; font-weight: 700; color: #0a2744; margin-bottom: 16px; }
+
+  /* Demo flow */
+  .demo-steps { display: flex; flex-direction: column; gap: 10px; }
+  .demo-step { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; border: 1px solid #e2e8f0; }
+  .demo-step:hover { background: #f8fafc; }
+  .step-num { background: #0a2744; color: white; width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .step-content h4 { font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 3px; }
+  .step-content p { font-size: 12px; color: #64748b; line-height: 1.5; }
+  .step-content .url-tag { font-size: 11px; color: #3b82f6; font-family: monospace; background: #eff6ff; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
+  .step-time { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+
+  /* Features grid */
+  .features { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .feature { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; background: #f8fafc; border-radius: 10px; }
+  .feature-icon { font-size: 18px; flex-shrink: 0; }
+  .feature-text h4 { font-size: 13px; font-weight: 600; color: #1e293b; margin-bottom: 2px; }
+  .feature-text p { font-size: 11px; color: #64748b; line-height: 1.4; }
+
+  /* Costs table */
+  .costs-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .costs-table th { text-align: left; padding: 10px 14px; background: #0a2744; color: #c5e84a; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .costs-table th:first-child { border-radius: 10px 0 0 0; }
+  .costs-table th:last-child { border-radius: 0 10px 0 0; text-align: right; }
+  .costs-table td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; color: #374151; vertical-align: top; }
+  .costs-table td:last-child { text-align: right; font-weight: 600; }
+  .costs-table tr:last-child td { border-bottom: none; }
+  .costs-table tr:nth-child(even) td { background: #f8fafc; }
+  .free-badge { background: #dcfce7; color: #166534; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 100px; }
+  .costs-table .total-row td { background: #0a2744 !important; color: white; font-weight: 700; font-size: 14px; border-radius: 0 0 10px 10px; }
+  .costs-table .total-row td:last-child { color: #c5e84a; }
+  .note { font-size: 10px; color: #94a3b8; margin-top: 4px; }
+
+  /* Roadmap */
+  .roadmap { display: flex; flex-direction: column; gap: 10px; }
+  .roadmap-item { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; border: 1px solid #e2e8f0; }
+  .roadmap-item.done { border-color: #bbf7d0; background: #f0fdf4; }
+  .roadmap-item.next { border-color: #bfdbfe; background: #eff6ff; }
+  .roadmap-item.future { border-color: #e2e8f0; }
+  .roadmap-status { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .roadmap-content h4 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .roadmap-item.done .roadmap-content h4 { color: #166534; }
+  .roadmap-item.next .roadmap-content h4 { color: #1d4ed8; }
+  .roadmap-item.future .roadmap-content h4 { color: #374151; }
+  .roadmap-content p { font-size: 11px; color: #64748b; line-height: 1.5; }
+  .roadmap-time { font-size: 10px; color: #94a3b8; margin-top: 3px; }
+
+  /* Stack */
+  .stack-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .stack-card { text-align: center; padding: 14px 10px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+  .stack-card .emoji { font-size: 22px; margin-bottom: 6px; }
+  .stack-card h4 { font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+  .stack-card p { font-size: 10px; color: #64748b; }
+
+  /* Footer */
+  .footer { margin-top: 36px; padding: 20px 24px; background: #f8fafc; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0; }
+  .footer p { font-size: 11px; color: #94a3b8; }
+  .footer strong { color: #0a2744; }
+
+  @media print {
+    body { background: white; }
+    .page { padding: 0; }
+    .header { border-radius: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>🌿 Oruga Cowork</h1>
+      <p>Sistema de Reservas &amp; Dashboard Financiero</p>
+    </div>
+    <div class="badge-live">⚡ EN VIVO</div>
+  </div>
+
+  <!-- URL en vivo -->
+  <div class="url-box">
+    <div class="dot"></div>
+    <div>
+      <div class="label">URL de producción</div>
+      <div class="url">https://oruga-reservas-caballerodc10-3219s-projects.vercel.app</div>
+    </div>
+  </div>
+
+  <!-- Demo Flow -->
+  <div class="section">
+    <div class="section-title">Guía de demo · 10 minutos</div>
+    <div class="demo-steps">
+      <div class="demo-step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Vista del cliente <span class="url-tag">/calendar</span></h4>
+          <p>Mostrar el calendario público con salas ocupadas en colores. Hacer click en un horario libre → se abre el formulario de solicitud. El sistema detecta conflictos en tiempo real.</p>
+          <div class="step-time">⏱ 2 minutos</div>
+        </div>
+      </div>
+      <div class="demo-step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Login como admin <span class="url-tag">/login</span></h4>
+          <p>Ingresar con email/password. Al ser admin aparece el "Panel Admin" en la barra de navegación con acceso a todas las secciones.</p>
+          <div class="step-time">⏱ 1 minuto</div>
+        </div>
+      </div>
+      <div class="demo-step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Calendario del admin</h4>
+          <p>Ver colores por sala, badges ✅ pago completo / 🕐 pendiente / rojo = no vino. Hacer click en una reserva → ver detalle con monto, medio de pago, notas. Panel diario a la derecha.</p>
+          <div class="step-time">⏱ 2 minutos</div>
+        </div>
+      </div>
+      <div class="demo-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>Membresías <span class="url-tag">/admin/memberships</span></h4>
+          <p>Lista de miembros activos con horas disponibles. Abrir uno → historial de pagos del mes. Registrar un pago → ver cómo se descuenta del saldo automáticamente.</p>
+          <div class="step-time">⏱ 2 minutos</div>
+        </div>
+      </div>
+      <div class="demo-step">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <h4>Dashboard Finanzas <span class="url-tag">/admin/finances</span></h4>
+          <p>KPI cards (ingresos, gastos, pendientes), balance del mes en verde/rojo automático, gráficos, filtros por tipo, buscador de coworker, agregar/editar fila, exportar a Excel.</p>
+          <div class="step-time">⏱ 3 minutos</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Funcionalidades -->
+  <div class="section">
+    <div class="section-title">Qué hace el sistema hoy</div>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">📅</div>
+        <div class="feature-text"><h4>Calendario de disponibilidad</h4><p>Vista pública por semana/mes/día, colores por sala</p></div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📝</div>
+        <div class="feature-text"><h4>Solicitud de turno online</h4><p>El cliente pide su horario desde el calendario</p></div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🏠</div>
+        <div class="feature-text"><h4>Gestión de reservas</h4><p>Crear, editar, cancelar, marcar no-show</p></div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">💳</div>
+        <div class="feature-text"><h4>Control de pagos</h4><p>Efectivo, Mercado Pago, banco, transferencia</p></div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⭐</div>
+        <div class="feature-text"><h4>Membresías con horas</h4><p>Horas totales, usadas, historial mensual de pagos</p></div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📊</div>
+        <div class="feature-text"><h4>Dashboard financiero</h4><p>KPIs, gráficos, balance automático del mes</p></div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📋</div>
+        <div class="feature-text"><h4>Planilla de caja digital</h4><p>Con búsqueda, filtros, paginación y export Excel</p></div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">👥</div>
+        <div class="feature-text"><h4>Multi-usuario</h4><p>Admins y clientes con permisos separados</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Costos en ARS -->
+  <div class="section">
+    <div class="section-title">Costos · Todo en pesos argentinos (mayo 2026, USD ≈ $1.350)</div>
+    <table class="costs-table">
+      <thead>
+        <tr>
+          <th>Herramienta / Servicio</th>
+          <th>Para qué sirve</th>
+          <th>Costo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Vercel</strong> (hosting web)<br><span class="note">Plan Hobby — ya deployado ✅</span></td>
+          <td>El sistema funciona online 24/7 desde cualquier dispositivo</td>
+          <td><span class="free-badge">GRATIS</span></td>
+        </tr>
+        <tr>
+          <td><strong>Supabase</strong> (base de datos)<br><span class="note">Plan Free — 500MB, 50.000 usuarios</span></td>
+          <td>Guarda todas las reservas, usuarios, pagos y finanzas</td>
+          <td><span class="free-badge">GRATIS</span></td>
+        </tr>
+        <tr>
+          <td><strong>Claude Code</strong> (IA que construyó esto)<br><span class="note">Plan Pro de Claude.ai</span></td>
+          <td>Desarrollar nuevas funciones, corregir errores, agregar pantallas — sin contratar un programador</td>
+          <td><strong>$27.000/mes</strong><br><span class="note">≈ USD $20/mes</span></td>
+        </tr>
+        <tr>
+          <td><strong>Dominio propio</strong> (opcional)<br><span class="note">Ej: reservas.orugacowork.com — NIC.ar o Namecheap</span></td>
+          <td>URL propia en vez del link largo de Vercel</td>
+          <td><strong>$20.000/año</strong><br><span class="note">≈ USD $15/año</span></td>
+        </tr>
+        <tr>
+          <td><strong>Notificaciones WhatsApp</strong> (próximo paso)<br><span class="note">WATI o Twilio — cuando llega una solicitud</span></td>
+          <td>El admin recibe aviso inmediato cuando un cliente pide turno</td>
+          <td><strong>~$10.000/mes</strong><br><span class="note">≈ USD $7/mes</span></td>
+        </tr>
+        <tr>
+          <td><strong>Email automático</strong> (opcional)<br><span class="note">Resend — hasta 3.000 emails/mes gratis</span></td>
+          <td>Confirmaciones automáticas al cliente cuando se aprueba su reserva</td>
+          <td><span class="free-badge">GRATIS</span><br><span class="note">hasta 3.000/mes</span></td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="2"><strong>TOTAL HOY (sistema funcionando en producción)</strong></td>
+          <td><strong>$27.000/mes</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:11px;color:#94a3b8;margin-top:10px;">* El único costo real es Claude Pro para seguir desarrollando. El hosting, la base de datos y el SSL son gratis. Sin Claude Code, se necesitaría contratar un desarrollador (~$300.000–$600.000/mes).</p>
+  </div>
+
+  <!-- Roadmap -->
+  <div class="section">
+    <div class="section-title">Próximos pasos</div>
+    <div class="roadmap">
+      <div class="roadmap-item done">
+        <div class="roadmap-status">✅</div>
+        <div class="roadmap-content">
+          <h4>Deploy en producción — LISTO</h4>
+          <p>El sistema ya está en vivo en Vercel. Funciona desde cualquier celular o computadora.</p>
+          <div class="roadmap-time">Completado hoy</div>
+        </div>
+      </div>
+      <div class="roadmap-item next">
+        <div class="roadmap-status">🔜</div>
+        <div class="roadmap-content">
+          <h4>Dominio propio — reservas.orugacowork.com</h4>
+          <p>Comprar dominio en NIC.ar y apuntarlo a Vercel. Proceso: 1-2 horas. Da una imagen profesional al sistema.</p>
+          <div class="roadmap-time">~$20.000/año · 1-2 horas de configuración</div>
+        </div>
+      </div>
+      <div class="roadmap-item next">
+        <div class="roadmap-status">🔜</div>
+        <div class="roadmap-content">
+          <h4>Notificación al admin cuando llega un pedido</h4>
+          <p>Cuando un cliente solicita turno → el admin recibe WhatsApp o email inmediato con todos los detalles.</p>
+          <div class="roadmap-time">~$10.000/mes (WATI) · 2-3 horas de desarrollo con Claude Code</div>
+        </div>
+      </div>
+      <div class="roadmap-item future">
+        <div class="roadmap-status">📌</div>
+        <div class="roadmap-content">
+          <h4>Confirmación automática al cliente</h4>
+          <p>Al aprobar una reserva → el sistema manda WhatsApp o email automático al cliente con los datos del turno.</p>
+          <div class="roadmap-time">Incluido en costo de mensajería · 1-2 horas desarrollo</div>
+        </div>
+      </div>
+      <div class="roadmap-item future">
+        <div class="roadmap-status">📌</div>
+        <div class="roadmap-content">
+          <h4>Pago online con Mercado Pago (opcional)</h4>
+          <p>El cliente paga la seña directamente desde el sistema. El pago se registra automáticamente en la planilla de caja.</p>
+          <div class="roadmap-time">Comisión MP 3-6% · 4-6 horas desarrollo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stack técnico -->
+  <div class="section">
+    <div class="section-title">Tecnología usada</div>
+    <div class="stack-grid">
+      <div class="stack-card"><div class="emoji">⚡</div><h4>Next.js 16</h4><p>Framework web</p></div>
+      <div class="stack-card"><div class="emoji">🗄️</div><h4>Supabase</h4><p>Base de datos</p></div>
+      <div class="stack-card"><div class="emoji">🚀</div><h4>Vercel</h4><p>Hosting</p></div>
+      <div class="stack-card"><div class="emoji">🤖</div><h4>Claude Code</h4><p>IA que lo construyó</p></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div>
+      <p><strong>🌿 Oruga Cowork</strong> · Sistema de Reservas</p>
+      <p style="margin-top:4px;">Construido con Claude Code (Anthropic) · Mayo 2026</p>
+    </div>
+    <div style="text-align:right;">
+      <p><strong>Tiempo total de desarrollo</strong></p>
+      <p style="margin-top:4px;">~2 semanas con IA</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Auto-print when opened directly
+  // window.print();
+</script>
+</body>
+</html>
