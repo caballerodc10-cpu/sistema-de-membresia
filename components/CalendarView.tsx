@@ -42,6 +42,10 @@ export default function CalendarView({ isAdmin }: { isAdmin: boolean }) {
 
   const todayStr = new Date().toISOString().slice(0, 10)
   const [panelDate, setPanelDate] = useState<string>(todayStr)
+  // Vista inicial: día en mobile, semana en desktop
+  const [initialView] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'timeGridDay' : 'timeGridWeek'
+  )
 
   useEffect(() => { loadData() }, [])
 
@@ -182,12 +186,12 @@ export default function CalendarView({ isAdmin }: { isAdmin: boolean }) {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2">
               <FullCalendar
                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                initialView="timeGridWeek"
+                initialView={initialView}
                 locale={esLocale}
                 headerToolbar={{
                   left: 'prev,next today',
                   center: 'title',
-                  right: 'dayGridMonth,timeGridWeek,timeGridDay',
+                  right: 'timeGridDay,timeGridWeek,dayGridMonth',
                 }}
                 events={isAdmin ? adminEvents : clientEvents}
                 selectable={!isAdmin}
@@ -224,13 +228,15 @@ export default function CalendarView({ isAdmin }: { isAdmin: boolean }) {
           )}
         </div>
 
-        {/* Panel agenda del día */}
-        <DailySchedulePanel
-          bookings={bookings}
-          isAdmin={isAdmin}
-          selectedDate={panelDate}
-          onDateChange={setPanelDate}
-        />
+        {/* Panel agenda del día — oculto en mobile */}
+        <div className="hidden lg:block">
+          <DailySchedulePanel
+            bookings={bookings}
+            isAdmin={isAdmin}
+            selectedDate={panelDate}
+            onDateChange={setPanelDate}
+          />
+        </div>
       </div>
 
       {!isAdmin && (

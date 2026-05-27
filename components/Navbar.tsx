@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase'
 import NotificationBell from '@/components/NotificationBell'
@@ -24,10 +24,26 @@ const adminLinks = [
   { href: '/admin/users', label: 'Usuarios', icon: '👥' },
 ]
 
-export default function Navbar({ isAdmin = false, userName = '' }: { isAdmin?: boolean, userName?: string }) {
+export default function Navbar({ isAdmin: isAdminProp = false, userName = '' }: { isAdmin?: boolean, userName?: string }) {
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
+  // Lee el rol desde el cliente para no depender solo del prop del server
+  const [isAdmin, setIsAdmin] = useState(isAdminProp)
+
+  useEffect(() => {
+    // Si ya vino como admin desde el server, no hace falta volver a leer
+    if (isAdminProp) { setIsAdmin(true); return }
+    // Si no, lo lee directamente desde Supabase
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('profiles').select('role').eq('id', user.id).single()
+        .then(({ data }) => {
+          if (data?.role === 'admin') setIsAdmin(true)
+        })
+    })
+  }, [isAdminProp])
 
   async function handleLogout() {
     const supabase = createClient()
@@ -35,8 +51,6 @@ export default function Navbar({ isAdmin = false, userName = '' }: { isAdmin?: b
     router.push('/login')
     router.refresh()
   }
-
-  const links = navLinks
 
   return (
     <nav style={{ background: '#0a2744' }} className="sticky top-0 z-50 shadow-lg">
@@ -51,7 +65,7 @@ export default function Navbar({ isAdmin = false, userName = '' }: { isAdmin?: b
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-1">
-            {links.map(link => (
+            {navLinks.map(link => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -90,7 +104,6 @@ export default function Navbar({ isAdmin = false, userName = '' }: { isAdmin?: b
 
           <div className="flex items-center gap-2">
             <NotificationBell isAdmin={isAdmin} />
-            {/* Badge de rol */}
             <span className="hidden md:block text-xs font-semibold px-2 py-1 rounded-full"
               style={{ background: isAdmin ? '#c5e84a' : 'rgba(255,255,255,0.15)', color: isAdmin ? '#0a2744' : '#fff' }}>
               {isAdmin ? '🛠 Admin' : '👤 Cliente'}
@@ -117,7 +130,7 @@ export default function Navbar({ isAdmin = false, userName = '' }: { isAdmin?: b
         {/* Mobile menu */}
         {menuOpen && (
           <div className="md:hidden border-t border-white/10 py-2 space-y-1">
-            {links.map(link => (
+            {navLinks.map(link => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -131,7 +144,7 @@ export default function Navbar({ isAdmin = false, userName = '' }: { isAdmin?: b
             {isAdmin && (
               <>
                 <div className="mx-4 my-1 border-t border-white/20" />
-                <p className="px-4 text-xs font-semibold" style={{ color: '#c5e84a' }}>ADMIN</p>
+                <p className="px-4 text-xs font-semibold" style={{ color: '#c5e84a' }}>— ADMIN —</p>
                 {adminLinks.map(link => (
                   <Link
                     key={link.href}
@@ -147,6 +160,7 @@ export default function Navbar({ isAdmin = false, userName = '' }: { isAdmin?: b
                 ))}
               </>
             )}
+            <div className="mx-4 my-1 border-t border-white/10" />
             <button onClick={handleLogout}
               className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-300 hover:bg-white/10 rounded-lg">
               🚪 Salir
