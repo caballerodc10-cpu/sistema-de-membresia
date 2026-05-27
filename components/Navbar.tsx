@@ -28,19 +28,35 @@ export default function Navbar({ isAdmin: isAdminProp = false, userName = '' }: 
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
-  // Lee el rol desde el cliente para no depender solo del prop del server
-  const [isAdmin, setIsAdmin] = useState(isAdminProp)
+
+  // Inicializa desde sessionStorage para tener el valor inmediatamente
+  const [isAdmin, setIsAdmin] = useState(() => {
+    if (isAdminProp) return true
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('oruga_role') === 'admin'
+    }
+    return false
+  })
 
   useEffect(() => {
-    // Si ya vino como admin desde el server, no hace falta volver a leer
-    if (isAdminProp) { setIsAdmin(true); return }
-    // Si no, lo lee directamente desde Supabase
+    if (isAdminProp) {
+      setIsAdmin(true)
+      sessionStorage.setItem('oruga_role', 'admin')
+      return
+    }
+    // Verifica siempre desde Supabase y actualiza sessionStorage
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
+      if (!user) {
+        sessionStorage.removeItem('oruga_role')
+        return
+      }
       supabase.from('profiles').select('role').eq('id', user.id).single()
         .then(({ data }) => {
-          if (data?.role === 'admin') setIsAdmin(true)
+          const admin = data?.role === 'admin'
+          setIsAdmin(admin)
+          if (admin) sessionStorage.setItem('oruga_role', 'admin')
+          else sessionStorage.removeItem('oruga_role')
         })
     })
   }, [isAdminProp])
