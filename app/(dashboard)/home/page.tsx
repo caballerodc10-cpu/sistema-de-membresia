@@ -1,0 +1,273 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { createClient } from '@/lib/supabase'
+
+const ROOM_COLORS: Record<string, string> = {
+  'Alocasia':  '#E67C73',
+  'Begonia':   '#0B8043',
+  'Pothus 2':  '#33B679',
+  'Pandurata': '#7986CB',
+  'Peperomia': '#F6BF26',
+  'Calathea':  '#3F51B5',
+  'Pothus':    '#F4511E',
+  'Bromelia':  '#039BE5',
+}
+
+type SalaStatus = {
+  id: string
+  name: string
+  capacity: number
+  ocupadaHasta: string | null
+  proximaReserva: string | null
+}
+
+export default function HomePage() {
+  const [salas, setSalas] = useState<SalaStatus[]>([])
+  const [userName, setUserName] = useState('')
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [hora, setHora] = useState('')
+
+  useEffect(() => {
+    const tick = () => setHora(new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }))
+    tick()
+    const interval = setInterval(tick, 60000)
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => { loadData() }, [])
+
+  async function loadData() {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data: profile } = await supabase
+      .from('profiles').select('full_name, role').eq('id', user.id).single()
+    setUserName(profile?.full_name || '')
+    setIsAdmin(profile?.role === 'admin')
+
+    const { data: rooms } = await supabase
+      .from('rooms').select('id, name, capacity').order('name')
+
+    const ahora = new Date().toISOString()
+    const hoy = new Date().toISOString().split('T')[0]
+
+    const { data: bookings } = await supabase
+      .from('bookings')
+      .select('room_id, start_time, end_time, user_name')
+      .eq('status', 'confirmed')
+      .gte('end_time', ahora)
+      .lte('start_time', `${hoy}T23:59:59`)
+
+    const salasStatus: SalaStatus[] = (rooms || []).map(r => {
+      const reservasDeHoy = (bookings || []).filter(b => b.room_id === r.id)
+      const ocupadaAhora = reservasDeHoy.find(b => b.start_time <= ahora && b.end_time >= ahora)
+      const proxima = reservasDeHoy
+        .filter(b => b.start_time > ahora)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0]
+
+      return {
+        id: r.id,
+        name: r.name,
+        capacity: r.capacity,
+        ocupadaHasta: ocupadaAhora ? ocupadaAhora.end_time : null,
+        proximaReserva: proxima ? proxima.start_time : null,
+      }
+    })
+
+    setSalas(salasStatus)
+    setLoading(false)
+  }
+
+  const disponibles = salas.filter(s => !s.ocupadaHasta)
+  const ocupadas = salas.filter(s => s.ocupadaHasta)
+
+  const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+  const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+  const hoy = new Date()
+  const fechaHoy = `${diasSemana[hoy.getDay()]} ${hoy.getDate()} de ${meses[hoy.getMonth()]}`
+
+  function formatHora(iso: string) {
+    return new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Hero con fotos reales */}
+      <div className="relative rounded-2xl overflow-hidden" style={{ minHeight: 220, background: '#0a2744' }}>
+        {/* Foto hero */}
+        <div className="absolute inset-0">
+          <Image src="/hero-oruga.png" alt="Oruga Coworking" fill className="object-cover" />
+        </div>
+        {/* Overlay degradado */}
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(10,39,68,0.7) 0%, rgba(10,39,68,0.3) 100%)' }} />
+        {/* Contenido */}
+        <div className="relative z-10 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" style={{ minHeight: 220 }}>
+          <div className="flex flex-col justify-center">
+            <div className="relative w-36 h-14 mb-3">
+              <Image src="/logo/logo-oruga-sin-fondo.png" alt="Oruga" fill className="object-contain object-left brightness-0 invert" />
+            </div>
+            <p className="text-sm font-medium mb-1" style={{ color: '#c5e84a' }}>{fechaHoy}</p>
+            <h1 className="text-2xl font-bold text-white">
+              {userName ? `Hola, ${userName.split(' ')[0]}` : 'Bienvenido'}
+            </h1>
+            <p className="text-blue-200 text-sm mt-1">Buenos Aires 678 · Corrientes Capital</p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-5xl font-bold text-white tabular-nums">{hora}</p>
+            <p className="text-blue-200 text-xs mt-1">hora local</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Galería rápida del espacio */}
+      <div>
+        <h2 className="text-base font-semibold mb-2" style={{ color: '#0a2744' }}>Nuestro espacio</h2>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {['/salas/alocasia-real-1.jpg', '/salas/begonia-real-1.jpg', '/salas/calathea-real-1.jpg', '/salas/cafeteria-real.jpg', '/salas/patio-real.jpg', '/salas/escalera-real.jpg'].map((src, i) => (
+            <div key={i} className="relative rounded-xl overflow-hidden aspect-square">
+              <Image src={src} alt={`Oruga ${i+1}`} fill className="object-cover hover:scale-105 transition-transform duration-300" />
+            </div>
+          ))}
+        </div>
+        <div className="text-right mt-1">
+          <a href="/salas" className="text-xs font-medium hover:underline" style={{ color: '#0a2744' }}>Ver todas las salas →</a>
+        </div>
+      </div>
+
+      {/* Disponibilidad ahora */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold" style={{ color: '#0a2744' }}>
+            Disponibilidad ahora
+          </h2>
+          <Link href="/calendar" className="text-sm font-medium hover:underline" style={{ color: '#0a2744' }}>
+            Ver calendario →
+          </Link>
+        </div>
+
+        {loading ? (
+          <div className="h-32 flex items-center justify-center text-gray-400">Cargando...</div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {salas.map(sala => {
+              const libre = !sala.ocupadaHasta
+              const color = ROOM_COLORS[sala.name] || '#616161'
+              return (
+                <div key={sala.id}
+                  className="rounded-xl border p-4 flex flex-col gap-2"
+                  style={{
+                    borderColor: libre ? '#d1fae5' : '#fee2e2',
+                    background: libre ? '#f0fdf4' : '#fff5f5',
+                  }}>
+                  <div className="flex items-center justify-between">
+                    <span className="w-3 h-3 rounded-full" style={{ background: color }}></span>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${libre ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                      {libre ? '● Libre' : '● Ocupada'}
+                    </span>
+                  </div>
+                  <p className="font-bold text-gray-900 text-sm">{sala.name}</p>
+                  <p className="text-xs text-gray-400">👥 hasta {sala.capacity} personas</p>
+                  {!libre && sala.ocupadaHasta && (
+                    <p className="text-xs text-red-500">Libera a las {formatHora(sala.ocupadaHasta)}</p>
+                  )}
+                  {libre && sala.proximaReserva && (
+                    <p className="text-xs text-amber-500">Ocupada desde {formatHora(sala.proximaReserva)}</p>
+                  )}
+                  {libre && !sala.proximaReserva && (
+                    <p className="text-xs text-green-500">Disponible todo el día</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Resumen rápido */}
+      {!loading && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white rounded-xl border border-gray-100 p-4 text-center shadow-sm">
+            <p className="text-3xl font-bold" style={{ color: '#0B8043' }}>{disponibles.length}</p>
+            <p className="text-sm text-gray-500 mt-1">salas disponibles</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-100 p-4 text-center shadow-sm">
+            <p className="text-3xl font-bold" style={{ color: '#D50000' }}>{ocupadas.length}</p>
+            <p className="text-sm text-gray-500 mt-1">salas ocupadas</p>
+          </div>
+        </div>
+      )}
+
+      {/* Accesos rápidos */}
+      <div>
+        <h2 className="text-lg font-bold mb-3" style={{ color: '#0a2744' }}>Accesos rápidos</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { href: '/calendar', label: 'Calendario', icon: '📅', desc: 'Ver todas las reservas' },
+            { href: '/salas', label: 'Nuestras salas', icon: '🏢', desc: 'Fotos y disponibilidad' },
+            { href: '/bookings', label: 'Mis reservas', icon: '📋', desc: 'Historial y próximas' },
+            isAdmin
+              ? { href: '/admin/finances', label: 'Finanzas', icon: '💰', desc: 'Ingresos y egresos' }
+              : { href: '/membership', label: 'Membresía', icon: '⭐', desc: 'Tu plan actual' },
+          ].map(item => (
+            <Link key={item.href} href={item.href}
+              className="bg-white rounded-xl border border-gray-100 p-4 hover:border-blue-200 hover:shadow-sm transition-all">
+              <span className="text-2xl">{item.icon}</span>
+              <p className="font-semibold text-gray-900 text-sm mt-2">{item.label}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Panel Admin — solo visible para admins */}
+      {isAdmin && (
+        <div className="rounded-2xl overflow-hidden border-2 shadow-sm" style={{ borderColor: '#c5e84a' }}>
+          <div className="px-5 py-3 flex items-center gap-2" style={{ background: '#0a2744' }}>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: '#c5e84a', color: '#0a2744' }}>🛠 ADMIN</span>
+            <p className="text-white font-semibold text-sm">Panel de administración</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-0 bg-white divide-x divide-gray-100">
+            {[
+              { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
+              { href: '/admin/memberships', label: 'Membresías', icon: '⭐' },
+              { href: '/admin/consumos', label: 'Consumos', icon: '☕' },
+              { href: '/admin/finances', label: 'Finanzas', icon: '💰' },
+              { href: '/admin/users', label: 'Usuarios', icon: '👥' },
+            ].map(item => (
+              <Link key={item.href} href={item.href}
+                className="flex flex-col items-center justify-center gap-1 py-4 hover:bg-gray-50 transition-colors">
+                <span className="text-xl">{item.icon}</span>
+                <span className="text-xs font-medium text-gray-700">{item.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* CTA WhatsApp para clientes */}
+      {!isAdmin && (
+        <a href="https://wa.me/5493794899843?text=Hola%20Oruga!%20Quiero%20consultar%20disponibilidad%20para%20reservar%20una%20sala"
+          target="_blank" rel="noopener noreferrer"
+          className="flex items-center justify-between rounded-xl p-4 transition-opacity hover:opacity-90"
+          style={{ background: '#0a2744' }}>
+          <div>
+            <p className="text-white font-semibold">¿Querés reservar?</p>
+            <p className="text-blue-200 text-sm">Escribinos por WhatsApp</p>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm"
+            style={{ background: '#25D366', color: '#fff' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            WhatsApp
+          </div>
+        </a>
+      )}
+    </div>
+  )
+}

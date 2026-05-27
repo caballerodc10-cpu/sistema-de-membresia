@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(ngrok config add-authtoken 3DfdYj95XQ0C6ceGctFFMhGZhi4_cyQshqUbHjfMrfZuNwjr)",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\", \"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\", \"User\"\\); ngrok config add-authtoken 3DfdYj95XQ0C6ceGctFFMhGZhi4_cyQshqUbHjfMrfZuNwjr)",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\", \"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\", \"User\"\\); ngrok http 3000)",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\", \"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\", \"User\"\\); ngrok update)",
+      "PowerShell(Start-Sleep -Seconds 5; try { \\(Invoke-RestMethod -Uri \"http://localhost:4040/api/tunnels\" -ErrorAction Stop\\).tunnels | Select-Object -ExpandProperty public_url } catch { \"ngrok API no disponible aun\" })"
+    ]
+  }
+}
