@@ -29,7 +29,7 @@ export default function Navbar({ isAdmin: isAdminProp = false, userName = '' }: 
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
 
-  // Inicializa desde sessionStorage para tener el valor inmediatamente
+  // Lee de sessionStorage al instante, luego verifica con /api/me
   const [isAdmin, setIsAdmin] = useState(() => {
     if (isAdminProp) return true
     if (typeof window !== 'undefined') {
@@ -44,21 +44,16 @@ export default function Navbar({ isAdmin: isAdminProp = false, userName = '' }: 
       sessionStorage.setItem('oruga_role', 'admin')
       return
     }
-    // Verifica siempre desde Supabase y actualiza sessionStorage
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        sessionStorage.removeItem('oruga_role')
-        return
-      }
-      supabase.from('profiles').select('role').eq('id', user.id).single()
-        .then(({ data }) => {
-          const admin = data?.role === 'admin'
-          setIsAdmin(admin)
-          if (admin) sessionStorage.setItem('oruga_role', 'admin')
-          else sessionStorage.removeItem('oruga_role')
-        })
-    })
+    // Usa /api/me que bypasea RLS con service role
+    fetch('/api/me')
+      .then(r => r.json())
+      .then(data => {
+        const admin = data?.role === 'admin'
+        setIsAdmin(admin)
+        if (admin) sessionStorage.setItem('oruga_role', 'admin')
+        else sessionStorage.removeItem('oruga_role')
+      })
+      .catch(() => {})
   }, [isAdminProp])
 
   async function handleLogout() {
