@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
+import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import MembersBell from './MembersBell'
 
@@ -15,6 +16,7 @@ export default function MembersHeader({
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   async function handleLogout() {
     const supabase = createClient()
@@ -44,17 +46,19 @@ export default function MembersHeader({
         {/* Nav links (admin) */}
         {isAdmin && (
           <nav className="hidden sm:flex items-center gap-1">
-            <Link
-              href="/members/admin"
-              className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${
-                pathname === '/members/admin'
-                  ? 'text-white'
-                  : 'text-blue-300 hover:text-white hover:bg-white/10'
-              }`}
-              style={pathname === '/members/admin' ? { background: 'rgba(197,232,74,0.2)', color: '#c5e84a' } : {}}
-            >
-              Membresías
-            </Link>
+            {[
+              { href: '/members/admin',      label: '⭐ Membresías' },
+              { href: '/members/registros',  label: '📝 Registros' },
+              { href: '/members/finanzas',   label: '💰 Finanzas' },
+            ].map(link => (
+              <Link key={link.href} href={link.href}
+                className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${
+                  pathname === link.href ? 'text-white' : 'text-blue-300 hover:text-white hover:bg-white/10'
+                }`}
+                style={pathname === link.href ? { background: 'rgba(197,232,74,0.2)', color: '#c5e84a' } : {}}>
+                {link.label}
+              </Link>
+            ))}
           </nav>
         )}
 
@@ -70,12 +74,45 @@ export default function MembersHeader({
           </span>
           <button
             onClick={handleLogout}
-            className="text-xs text-blue-300 hover:text-white px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
+            className="hidden sm:block text-xs text-blue-300 hover:text-white px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
           >
             Salir
           </button>
+          {/* Hamburguesa mobile */}
+          {isAdmin && (
+            <button onClick={() => setMenuOpen(o => !o)}
+              className="sm:hidden p-2 rounded-lg text-blue-300 hover:bg-white/10">
+              <div className="w-4 space-y-1">
+                <span className="block h-0.5 bg-current" />
+                <span className="block h-0.5 bg-current" />
+                <span className="block h-0.5 bg-current" />
+              </div>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Mobile menu */}
+      {menuOpen && isAdmin && (
+        <div className="sm:hidden border-t border-white/10 px-4 py-3 space-y-1">
+          {[
+            { href: '/members/admin',     label: '⭐ Membresías' },
+            { href: '/members/registros', label: '📝 Registros' },
+            { href: '/members/finanzas',  label: '💰 Finanzas' },
+          ].map(link => (
+            <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}
+              className={`block px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${pathname === link.href ? '' : 'text-blue-300 hover:text-white hover:bg-white/10'}`}
+              style={pathname === link.href ? { background: 'rgba(197,232,74,0.15)', color: '#c5e84a' } : {}}>
+              {link.label}
+            </Link>
+          ))}
+          <div className="border-t border-white/10 pt-2 mt-2">
+            <button onClick={handleLogout} className="w-full text-left px-3 py-2.5 text-sm text-red-300 hover:bg-white/10 rounded-xl">
+              🚪 Salir
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   )
 }

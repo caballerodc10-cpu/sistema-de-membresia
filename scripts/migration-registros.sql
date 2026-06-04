@@ -14,5 +14,19 @@ CREATE INDEX IF NOT EXISTS idx_profiles_estado ON profiles(estado_registro);
 CREATE INDEX IF NOT EXISTS idx_profiles_convenio ON profiles(convenio);
 
 -- Portal de horas por empresa (link privado sin login)
--- IMPORTANTE: correr esta línea también en Supabase SQL Editor
 ALTER TABLE memberships ADD COLUMN IF NOT EXISTS portal_token text UNIQUE;
+
+-- Tabla de gastos / egresos
+CREATE TABLE IF NOT EXISTS expenses (
+  id          uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  fecha       date NOT NULL DEFAULT CURRENT_DATE,
+  concepto    text NOT NULL,
+  monto       numeric NOT NULL,
+  categoria   text DEFAULT 'general',
+  metodo      text DEFAULT 'efectivo',
+  notas       text,
+  created_at  timestamptz DEFAULT now()
+);
+-- Solo admins pueden leer/escribir (o deshabilitar RLS si preferís)
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "admin_all" ON expenses USING (true) WITH CHECK (true);
