@@ -57,6 +57,7 @@ function fmtFecha(s: string) {
 export default function RegistrosAdminPage() {
   const [registros, setRegistros] = useState<Registro[]>([])
   const [loading, setLoading] = useState(true)
+  const [apiError, setApiError] = useState<string | null>(null)
   const [expandido, setExpandido] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -74,14 +75,25 @@ export default function RegistrosAdminPage() {
 
   async function load() {
     setLoading(true)
-    const params = new URLSearchParams()
-    if (filtroEstado)   params.set('estado', filtroEstado)
-    if (filtroConvenio) params.set('convenio', filtroConvenio)
-    if (filtroTipo)     params.set('tipo', filtroTipo)
-    if (filtroSala)     params.set('sala', filtroSala)
-    const res = await fetch('/api/admin/registros?' + params)
-    const data = await res.json()
-    setRegistros(Array.isArray(data) ? data : [])
+    setApiError(null)
+    try {
+      const params = new URLSearchParams()
+      if (filtroEstado)   params.set('estado', filtroEstado)
+      if (filtroConvenio) params.set('convenio', filtroConvenio)
+      if (filtroTipo)     params.set('tipo', filtroTipo)
+      if (filtroSala)     params.set('sala', filtroSala)
+      const res = await fetch('/api/admin/registros?' + params)
+      const data = await res.json()
+      if (!res.ok) {
+        setApiError(`Error ${res.status}: ${data?.error || 'Error desconocido'}`)
+        setRegistros([])
+      } else {
+        setRegistros(Array.isArray(data) ? data : [])
+      }
+    } catch (e: any) {
+      setApiError('No se pudo conectar con la API: ' + e.message)
+      setRegistros([])
+    }
     setLoading(false)
   }
 
@@ -141,6 +153,23 @@ export default function RegistrosAdminPage() {
         <h1 className="text-2xl font-bold" style={{ color: '#0a2744' }}>Registros</h1>
         <p className="text-sm text-gray-500 mt-0.5">{registros.length} usuarios registrados</p>
       </div>
+
+      {/* Error de API */}
+      {apiError && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-start gap-3">
+          <span className="text-xl">⚠️</span>
+          <div>
+            <p className="font-semibold text-red-700 text-sm">Error al cargar registros</p>
+            <p className="text-xs text-red-600 mt-0.5">{apiError}</p>
+            <p className="text-xs text-red-500 mt-1">
+              Si dice "No autorizado": recargá la página o volvé a iniciar sesión.
+            </p>
+            <button onClick={load} className="mt-2 text-xs px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 font-medium">
+              Reintentar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Métricas */}
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
