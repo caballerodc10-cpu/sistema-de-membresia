@@ -157,17 +157,22 @@ export default function MiMembresiaPage() {
 
   async function load() {
     setLoading(true)
-    const supabase = createClient()
-    const [membRes, bkRes, roomsRes] = await Promise.all([
+    const [membRes, bkRes] = await Promise.all([
       fetch('/api/members/my-membership'),
       fetch('/api/members/my-bookings'),
-      supabase.from('rooms').select('id, name, capacity').order('name'),
     ])
     const [membData, bkData] = await Promise.all([membRes.json(), bkRes.json()])
-    setMembership(membData.membership || null)
+    const mem = membData.membership || null
+    setMembership(mem)
     setPayments(membData.payments || [])
     setBookings(Array.isArray(bkData) ? bkData : [])
-    setRooms(roomsRes.data || [])
+
+    // Solo cargar salas si el plan es flex (el usuario elige sala)
+    if (mem && ES_FLEX(mem.plan)) {
+      const res = await fetch('/api/rooms-public')
+      const roomsData = await res.json()
+      setRooms(Array.isArray(roomsData) ? roomsData : [])
+    }
     setLoading(false)
   }
 
@@ -177,21 +182,26 @@ export default function MiMembresiaPage() {
     setSubmitting(true)
 
     const salaFija = membership ? !ES_FLEX(membership.plan) : false
-    const roomId = salaFija
-      ? rooms.find(r => r.name === membership?.plan)?.id || ''
-      : formData.room_id
 
-    if (!roomId) { setFormError('Seleccioná una sala'); setSubmitting(false); return }
+    // Para sala fija: el servidor resuelve el room_id por el nombre del plan
+    // Para flex: el usuario elige room_id desde el dropdown
+    const body: Record<string, string | null> = {
+      start_time: `${formData.fecha}T${formData.desde}:00`,
+      end_time:   `${formData.fecha}T${formData.hasta}:00`,
+      notes: formData.notas || null,
+    }
+
+    if (salaFija) {
+      body.plan_name = membership!.plan   // el servidor busca el room_id
+    } else {
+      if (!formData.room_id) { setFormError('Seleccioná una sala'); setSubmitting(false); return }
+      body.room_id = formData.room_id
+    }
 
     const res = await fetch('/api/members/request-booking', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        room_id: roomId,
-        start_time: `${formData.fecha}T${formData.desde}:00`,
-        end_time:   `${formData.fecha}T${formData.hasta}:00`,
-        notes: formData.notas || null,
-      }),
+      body: JSON.stringify(body),
     })
 
     const result = await res.json()

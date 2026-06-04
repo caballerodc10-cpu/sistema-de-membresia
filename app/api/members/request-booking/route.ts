@@ -9,32 +9,66 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
     const body = await req.json()
-    const { room_id, start_time, end_time, notes } = body
+    const { room_id: roomIdBody, plan_name, start_time, end_time, notes } = body
 
-    if (!room_id || !start_time || !end_time) {
+    if (!start_time || !end_time) {
       return NextResponse.json({ error: 'Faltan datos requeridos' }, { status: 400 })
     }
 
     const admin = createAdminSupabaseClient()
 
-    // Obtener perfil + membresía del usuario
-    const [{ data: profile }, { data: membership }] = await Promise.all([
-      admin.from('profiles').select('full_name').eq('id', user.id).single(),
-      admin.from('memberships').select('id, user_name, hours_total, hours_used, plan').eq('user_id', user.id).maybeSingle(),
-    ])
+    // Obtener perfil + membresía (por user_id o por nombre)
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
+
+    let membership: any = null
+    const { data: memById } = await admin
+      .from('memberships')
+      .select('id, user_name, hours_total, hours_used, plan')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    membership = memById
+
+    if (!membership && profile?.full_name) {
+      const { data: memByName } = await admin
+        .from('memberships')
+        .select('id, user_name, hours_total, hours_used, plan')
+        .eq('user_name', profile.full_name)
+        .maybeSingle()
+      membership = memByName
+    }
 
     const userName = membership?.user_name || profile?.full_name || user.email || ''
 
-    // Calcular horas de la reserva
-    const startDate = new Date(start_time)
-    const endDate = new Date(end_time)
-    const duracionHoras = (endDate.getTime() - startDate.getTime()) / 3600000
+    // Resolver room_id: prioridad → body → plan de la membresía → plan_name del body
+    let room_id = roomIdBody || ''
 
+    if (!room_id) {
+      const planToSearch = plan_name || membership?.plan
+      if (planToSearch) {
+        const { data: room } = await admin
+          .from('rooms')
+          .select('id')
+          .ilike('name', planToSearch)
+          .maybeSingle()
+        room_id = room?.id || ''
+      }
+    }
+
+    if (!room_id) {
+      return NextResponse.json({ error: 'No se pudo determinar la sala. Contactá al administrador.' }, { status: 400 })
+    }
+
+    // Calcular duración
+    const duracionHoras = (new Date(end_time).getTime() - new Date(start_time).getTime()) / 3600000
     if (duracionHoras <= 0) {
       return NextResponse.json({ error: 'Horario inválido' }, { status: 400 })
     }
 
-    // Verificar que tiene horas disponibles (si es membresía con horas)
+    // Verificar horas disponibles
     if (membership && membership.hours_total > 0) {
       const disponibles = membership.hours_total - membership.hours_used
       if (duracionHoras > disponibles) {
@@ -44,7 +78,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Verificar solapamiento (sin buffer para solicitudes — el admin lo decide al aprobar)
+    // Verificar solapamiento
     const { data: existing } = await admin
       .from('bookings')
       .select('id, start_time, end_time')
@@ -54,12 +88,10 @@ export async function POST(req: Request) {
       .gt('end_time', start_time)
 
     if (existing && existing.length > 0) {
-      return NextResponse.json({
-        error: 'La sala ya tiene una reserva confirmada en ese horario.'
-      }, { status: 409 })
+      return NextResponse.json({ error: 'La sala ya tiene una reserva confirmada en ese horario.' }, { status: 409 })
     }
 
-    // Crear la solicitud con status 'pending'
+    // Insertar solicitud
     const { data: booking, error: insertError } = await admin
       .from('bookings')
       .insert({
