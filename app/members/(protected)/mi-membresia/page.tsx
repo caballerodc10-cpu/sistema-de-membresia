@@ -148,10 +148,57 @@ export default function MiMembresiaPage() {
     desde: '09:00',
     hasta: '11:00',
     notas: '',
+    servicios: [] as string[],
   })
+  const [acompañantes, setAcompañantes] = useState<{ nombre: string; dni: string }[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError]   = useState('')
   const [formOk, setFormOk]         = useState(false)
+
+  const SERVICIOS_DISPONIBLES = [
+    { id: 'agua',        label: '💧 Agua / Bebidas' },
+    { id: 'calefaccion', label: '🌡️ Calefacción / Aire' },
+    { id: 'pizarra',     label: '📋 Pizarra' },
+    { id: 'proyector',   label: '📽️ Proyector' },
+  ]
+
+  function toggleServicio(id: string) {
+    setFormData(d => ({
+      ...d,
+      servicios: d.servicios.includes(id)
+        ? d.servicios.filter(s => s !== id)
+        : [...d.servicios, id],
+    }))
+  }
+
+  function agregarAcompañante() {
+    setAcompañantes(a => [...a, { nombre: '', dni: '' }])
+  }
+
+  function updateAcompañante(i: number, field: 'nombre' | 'dni', value: string) {
+    setAcompañantes(a => a.map((p, idx) => idx === i ? { ...p, [field]: value } : p))
+  }
+
+  function removeAcompañante(i: number) {
+    setAcompañantes(a => a.filter((_, idx) => idx !== i))
+  }
+
+  function buildNotes(): string {
+    const partes: string[] = []
+    if (formData.servicios.length > 0) {
+      const labels = formData.servicios.map(id =>
+        SERVICIOS_DISPONIBLES.find(s => s.id === id)?.label.replace(/^[^ ]+ /, '') || id
+      )
+      partes.push(`Servicios solicitados: ${labels.join(', ')}`)
+    }
+    const acompFiltrados = acompañantes.filter(a => a.nombre.trim())
+    if (acompFiltrados.length > 0) {
+      const lista = acompFiltrados.map(a => `${a.nombre.trim()}${a.dni.trim() ? ` (DNI: ${a.dni.trim()})` : ''}`).join(' · ')
+      partes.push(`Acompañantes: ${lista}`)
+    }
+    if (formData.notas.trim()) partes.push(formData.notas.trim())
+    return partes.join('\n')
+  }
 
   useEffect(() => { load() }, [])
 
@@ -201,7 +248,7 @@ export default function MiMembresiaPage() {
     const res = await fetch('/api/members/request-booking', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...body, notes: buildNotes() || null }),
     })
 
     const result = await res.json()
@@ -210,7 +257,8 @@ export default function MiMembresiaPage() {
     } else {
       setFormOk(true)
       setShowForm(false)
-      setFormData({ room_id: '', fecha: new Date().toISOString().slice(0, 10), desde: '09:00', hasta: '11:00', notas: '' })
+      setFormData({ room_id: '', fecha: new Date().toISOString().slice(0, 10), desde: '09:00', hasta: '11:00', notas: '', servicios: [] })
+      setAcompañantes([])
       await load()
     }
     setSubmitting(false)
@@ -555,12 +603,65 @@ export default function MiMembresiaPage() {
                     </div>
                   )}
 
+                  {/* Servicios */}
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">Notas (opcional)</label>
+                    <label className="block text-xs font-semibold text-gray-500 mb-2">¿Qué necesitás para tu reserva?</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {SERVICIOS_DISPONIBLES.map(s => (
+                        <label key={s.id}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer text-sm transition-colors ${
+                            formData.servicios.includes(s.id)
+                              ? 'border-blue-400 bg-blue-50 text-blue-800 font-semibold'
+                              : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                          }`}>
+                          <input type="checkbox" className="accent-blue-600 shrink-0"
+                            checked={formData.servicios.includes(s.id)}
+                            onChange={() => toggleServicio(s.id)} />
+                          {s.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Acompañantes */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-semibold text-gray-500">Acompañantes (opcional)</label>
+                      <button type="button" onClick={agregarAcompañante}
+                        className="text-xs px-2.5 py-1 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 font-medium">
+                        + Agregar persona
+                      </button>
+                    </div>
+                    {acompañantes.length === 0 && (
+                      <p className="text-xs text-gray-400 italic">Si venís con personas, podés registrarlas aquí</p>
+                    )}
+                    <div className="space-y-2">
+                      {acompañantes.map((a, i) => (
+                        <div key={i} className="flex gap-2 items-center bg-gray-50 rounded-xl px-3 py-2 border border-gray-100">
+                          <div className="flex-1 grid grid-cols-2 gap-2">
+                            <input type="text" placeholder="Nombre y apellido"
+                              value={a.nombre}
+                              onChange={e => updateAcompañante(i, 'nombre', e.target.value)}
+                              className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 bg-white" />
+                            <input type="text" placeholder="DNI (sin puntos)"
+                              value={a.dni}
+                              onChange={e => updateAcompañante(i, 'dni', e.target.value)}
+                              className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 bg-white" />
+                          </div>
+                          <button type="button" onClick={() => removeAcompañante(i)}
+                            className="text-gray-300 hover:text-red-400 text-lg leading-none shrink-0">×</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Notas adicionales */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Notas adicionales (opcional)</label>
                     <input type="text"
                       value={formData.notas}
                       onChange={e => setFormData(d => ({ ...d, notas: e.target.value }))}
-                      placeholder="Ej: viene con 3 personas, necesita proyector..."
+                      placeholder="Cualquier otra información para el equipo..."
                       className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800"
                     />
                   </div>

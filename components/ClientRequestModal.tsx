@@ -24,12 +24,40 @@ export default function ClientRequestModal({ onClose, onSaved, initialDate, init
     return '11:00'
   })
   const [notes, setNotes] = useState('')
+  const [servicios, setServicios] = useState<string[]>([])
+  const [acompañantes, setAcompañantes] = useState<{ nombre: string; dni: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [exito, setExito] = useState(false)
   const [disponibilidad, setDisponibilidad] = useState<'libre' | 'ocupado' | 'checking' | null>(null)
   const [conflictoMsg, setConflictoMsg] = useState('')
+
+  const SERVICIOS = [
+    { id: 'agua',        label: '💧 Agua / Bebidas' },
+    { id: 'calefaccion', label: '🌡️ Calefacción / Aire' },
+    { id: 'pizarra',     label: '📋 Pizarra' },
+    { id: 'proyector',   label: '📽️ Proyector' },
+  ]
+
+  function toggleServicio(id: string) {
+    setServicios(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id])
+  }
+
+  function buildNotes(): string {
+    const partes: string[] = []
+    if (servicios.length > 0) {
+      const labels = servicios.map(id => SERVICIOS.find(s => s.id === id)?.label.replace(/^[^ ]+ /, '') || id)
+      partes.push(`Servicios solicitados: ${labels.join(', ')}`)
+    }
+    const filtrados = acompañantes.filter(a => a.nombre.trim())
+    if (filtrados.length > 0) {
+      const lista = filtrados.map(a => `${a.nombre.trim()}${a.dni.trim() ? ` (DNI: ${a.dni.trim()})` : ''}`).join(' · ')
+      partes.push(`Acompañantes: ${lista}`)
+    }
+    if (notes.trim()) partes.push(notes.trim())
+    return partes.join('\n')
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -197,7 +225,7 @@ export default function ClientRequestModal({ onClose, onSaved, initialDate, init
       room_id: membresia!.room_id,
       start_time: startTimestamp,
       end_time: endTimestamp,
-      notes,
+      notes: buildNotes() || null,
       status: 'pending',
       precio_total: 0,
       monto_sena: 0,
@@ -337,12 +365,66 @@ export default function ClientRequestModal({ onClose, onSaved, initialDate, init
               </div>
             )}
 
-            {/* Notas */}
+            {/* Servicios */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Comentarios (opcional)</label>
-              <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
-                placeholder="Ej: ¿puedo traer un invitado? ¿necesito proyector?"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none resize-none text-gray-900 text-sm" />
+              <label className="block text-sm font-medium text-gray-700 mb-2">¿Qué necesitás?</label>
+              <div className="grid grid-cols-2 gap-2">
+                {SERVICIOS.map(s => (
+                  <label key={s.id}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-sm transition-colors ${
+                      servicios.includes(s.id)
+                        ? 'border-blue-400 bg-blue-50 text-blue-800 font-semibold'
+                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}>
+                    <input type="checkbox" className="accent-blue-600 shrink-0"
+                      checked={servicios.includes(s.id)}
+                      onChange={() => toggleServicio(s.id)} />
+                    {s.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Acompañantes */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium text-gray-700">Acompañantes (opcional)</label>
+                <button type="button"
+                  onClick={() => setAcompañantes(a => [...a, { nombre: '', dni: '' }])}
+                  className="text-xs px-2.5 py-1 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 font-medium">
+                  + Agregar
+                </button>
+              </div>
+              {acompañantes.length === 0 && (
+                <p className="text-xs text-gray-400 italic">Si venís con personas, podés registrarlas aquí</p>
+              )}
+              <div className="space-y-2">
+                {acompañantes.map((a, i) => (
+                  <div key={i} className="flex gap-2 items-center bg-gray-50 rounded-lg px-3 py-2">
+                    <div className="flex-1 grid grid-cols-2 gap-2">
+                      <input type="text" placeholder="Nombre y apellido"
+                        value={a.nombre}
+                        onChange={e => setAcompañantes(prev => prev.map((p, idx) => idx === i ? { ...p, nombre: e.target.value } : p))}
+                        className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 bg-white" />
+                      <input type="text" placeholder="DNI (sin puntos)"
+                        value={a.dni}
+                        onChange={e => setAcompañantes(prev => prev.map((p, idx) => idx === i ? { ...p, dni: e.target.value } : p))}
+                        className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 bg-white" />
+                    </div>
+                    <button type="button"
+                      onClick={() => setAcompañantes(a => a.filter((_, idx) => idx !== i))}
+                      className="text-gray-300 hover:text-red-400 text-lg leading-none">×</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Notas adicionales */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notas adicionales (opcional)</label>
+              <input type="text" value={notes} onChange={e => setNotes(e.target.value)}
+                placeholder="Cualquier otra información..."
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none text-gray-900 text-sm" />
             </div>
 
             {error && <div className="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-3">{error}</div>}
