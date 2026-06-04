@@ -12,3 +12,7 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS tiene_bonificacion  boolean DEFAUL
 -- Índice para filtrar por estado rápido
 CREATE INDEX IF NOT EXISTS idx_profiles_estado ON profiles(estado_registro);
 CREATE INDEX IF NOT EXISTS idx_profiles_convenio ON profiles(convenio);
+
+-- Portal de horas por empresa (link privado sin login)
+-- IMPORTANTE: correr esta línea también en Supabase SQL Editor
+ALTER TABLE memberships ADD COLUMN IF NOT EXISTS portal_token text UNIQUE;

@@ -13,6 +13,7 @@ type Member = {
   monto_mensual: number
   notas: string | null
   telefono?: string | null
+  portal_token?: string | null
 }
 
 type Payment = {
@@ -95,6 +96,10 @@ export default function MembersAdminPage() {
     user_name: '', plan: 'Alocasia', hours_total: 0, hours_used: 0,
     monto_mensual: 0, valid_until: '', telefono: '', notas: '',
   })
+
+  // Portal tokens
+  const [generandoToken, setGenerandoToken] = useState<string | null>(null)
+  const [copiedToken, setCopiedToken] = useState<string | null>(null)
 
   const [formPago, setFormPago] = useState({
     monto: '',
@@ -258,6 +263,34 @@ export default function MembersAdminPage() {
   async function eliminarMembresia(id: string, nombre: string) {
     if (!confirm(`¿Eliminar la membresía de "${nombre}"?\nTambién se borrarán sus pagos. Esta acción no se puede deshacer.`)) return
     await fetch(`/api/admin/memberships/${id}`, { method: 'DELETE' })
+    await load()
+  }
+
+  async function generarToken(membId: string) {
+    setGenerandoToken(membId)
+    const res = await fetch('/api/members/generate-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ membership_id: membId }),
+    })
+    const data = await res.json()
+    if (data.token) {
+      const url = `${window.location.origin}/portal/${data.token}`
+      await navigator.clipboard.writeText(url)
+      setCopiedToken(membId)
+      setTimeout(() => setCopiedToken(null), 3000)
+      await load()
+    }
+    setGenerandoToken(null)
+  }
+
+  async function revocarToken(membId: string) {
+    if (!confirm('¿Revocar el link? El cliente ya no podrá usarlo.')) return
+    await fetch('/api/members/generate-token', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ membership_id: membId }),
+    })
     await load()
   }
 
@@ -634,6 +667,39 @@ export default function MembersAdminPage() {
                       >
                         🗑
                       </button>
+                      {/* Link privado portal */}
+                      {m.portal_token ? (
+                        <div className="flex gap-1">
+                          <button
+                            onClick={async () => {
+                              const url = `${window.location.origin}/portal/${m.portal_token}`
+                              await navigator.clipboard.writeText(url)
+                              setCopiedToken(m.id)
+                              setTimeout(() => setCopiedToken(null), 3000)
+                            }}
+                            className={`text-xs px-3 py-1.5 rounded-xl font-medium transition-colors ${copiedToken === m.id ? 'bg-green-100 text-green-700' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
+                            title="Copiar link del portal"
+                          >
+                            {copiedToken === m.id ? '✓ Copiado' : '🔗 Copiar link'}
+                          </button>
+                          <button
+                            onClick={() => revocarToken(m.id)}
+                            className="text-xs px-2 py-1.5 rounded-xl bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                            title="Revocar link"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => generarToken(m.id)}
+                          disabled={generandoToken === m.id}
+                          className="text-xs px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-600 font-medium hover:bg-indigo-100 disabled:opacity-50"
+                          title="Generar link privado de portal"
+                        >
+                          {generandoToken === m.id ? '...' : '🔗 Generar link'}
+                        </button>
+                      )}
                       {m.telefono && (
                         <a
                           href={`https://wa.me/549${m.telefono.replace(/\D/g, '')}?text=Hola%20${encodeURIComponent(m.user_name)}!%20Te%20contactamos%20desde%20Oruga%20Cowork%20sobre%20tu%20membresía.`}
