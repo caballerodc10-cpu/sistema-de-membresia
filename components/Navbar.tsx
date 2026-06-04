@@ -17,6 +17,7 @@ const navLinks = [
 
 const adminLinks = [
   { href: '/admin/dashboard', label: 'Panel Admin', icon: '🛠' },
+  { href: '/admin/registros', label: 'Registros', icon: '📝' },
   { href: '/admin/memberships', label: 'Membresías', icon: '⭐' },
   { href: '/admin/consumos', label: 'Consumos', icon: '☕' },
   { href: '/admin/finances', label: 'Finanzas', icon: '💰' },
