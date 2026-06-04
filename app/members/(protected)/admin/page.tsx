@@ -78,6 +78,7 @@ export default function MembersAdminPage() {
 
   const [formNuevo, setFormNuevo] = useState({
     user_name: '',
+    email: '',
     plan: 'Alocasia',
     hours_total: '',
     monto_mensual: '',
@@ -86,6 +87,13 @@ export default function MembersAdminPage() {
     })(),
     telefono: '',
     notas: '',
+  })
+
+  // Estado edición
+  const [editandoId, setEditandoId] = useState<string | null>(null)
+  const [formEdit, setFormEdit] = useState({
+    user_name: '', plan: 'Alocasia', hours_total: 0, hours_used: 0,
+    monto_mensual: 0, valid_until: '', telefono: '', notas: '',
   })
 
   const [formPago, setFormPago] = useState({
@@ -190,7 +198,7 @@ export default function MembersAdminPage() {
   async function crearMembresia() {
     if (!formNuevo.user_name.trim() || !formNuevo.monto_mensual) return
     setSaving(true)
-    await fetch('/api/admin/memberships', {
+    const res = await fetch('/api/admin/memberships', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -205,14 +213,52 @@ export default function MembersAdminPage() {
         notas: formNuevo.notas || null,
       }),
     })
+    const newMem = await res.json()
+
+    // Si ingresaron email, vincular automáticamente
+    if (newMem?.id && formNuevo.email.trim()) {
+      await fetch('/api/members/link-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ membership_id: newMem.id, email: formNuevo.email.trim() }),
+      })
+    }
+
     setShowNuevo(false)
     setFormNuevo({
-      user_name: '', plan: 'Alocasia', hours_total: '', monto_mensual: '',
+      user_name: '', email: '', plan: 'Alocasia', hours_total: '', monto_mensual: '',
       valid_until: (() => { const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10) })(),
       telefono: '', notas: '',
     })
     await load()
     setSaving(false)
+  }
+
+  async function guardarEdicion(id: string) {
+    setSaving(true)
+    await fetch(`/api/admin/memberships/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_name: formEdit.user_name,
+        plan: formEdit.plan,
+        hours_total: Number(formEdit.hours_total),
+        hours_used: Number(formEdit.hours_used),
+        monto_mensual: Number(formEdit.monto_mensual),
+        valid_until: formEdit.valid_until || null,
+        telefono: formEdit.telefono || null,
+        notas: formEdit.notas || null,
+      }),
+    })
+    setEditandoId(null)
+    await load()
+    setSaving(false)
+  }
+
+  async function eliminarMembresia(id: string, nombre: string) {
+    if (!confirm(`¿Eliminar la membresía de "${nombre}"?\nTambién se borrarán sus pagos. Esta acción no se puede deshacer.`)) return
+    await fetch(`/api/admin/memberships/${id}`, { method: 'DELETE' })
+    await load()
   }
 
   // Métricas
@@ -257,13 +303,24 @@ export default function MembersAdminPage() {
         <div className="bg-white rounded-2xl border border-blue-100 shadow-sm p-5">
           <h3 className="font-bold text-gray-800 mb-4">Alta de membresía</h3>
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
+            <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Nombre del cliente / empresa *</label>
               <input type="text" value={formNuevo.user_name}
                 onChange={e => setFormNuevo(d => ({ ...d, user_name: e.target.value }))}
-                placeholder="Ej: AWA Consulting, Club Robótica Corrientes..."
+                placeholder="Ej: AWA Consulting, Adriana Farah..."
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800"
               />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">
+                Email del cliente <span className="text-gray-400 font-normal">(para vincular su cuenta)</span>
+              </label>
+              <input type="email" value={formNuevo.email}
+                onChange={e => setFormNuevo(d => ({ ...d, email: e.target.value }))}
+                placeholder="cliente@email.com"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800"
+              />
+              <p className="text-xs text-blue-500 mt-1">Si tiene cuenta en el sistema, podrá ver su membresía</p>
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Plan / Sala *</label>
@@ -534,7 +591,7 @@ export default function MembersAdminPage() {
                       {/* Vincular cuenta */}
                       {!m.user_id ? (
                         <button
-                          onClick={() => { setVincularId(vincularId === m.id ? null : m.id); setVincularMsg(''); setVincularEmail(''); setRegistrandoId(null); setHistorialId(null) }}
+                          onClick={() => { setVincularId(vincularId === m.id ? null : m.id); setVincularMsg(''); setVincularEmail(''); setRegistrandoId(null); setHistorialId(null); setEditandoId(null) }}
                           className="text-xs px-3 py-1.5 rounded-xl bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
                           title="Vincular a cuenta de usuario"
                         >
@@ -549,6 +606,34 @@ export default function MembersAdminPage() {
                           ✅ Vinculada
                         </button>
                       )}
+                      {/* Editar */}
+                      <button
+                        onClick={() => {
+                          if (editandoId === m.id) { setEditandoId(null); return }
+                          setEditandoId(m.id)
+                          setFormEdit({
+                            user_name: m.user_name,
+                            plan: m.plan,
+                            hours_total: m.hours_total,
+                            hours_used: m.hours_used,
+                            monto_mensual: m.monto_mensual,
+                            valid_until: m.valid_until || '',
+                            telefono: (m.telefono as string) || '',
+                            notas: m.notas || '',
+                          })
+                          setRegistrandoId(null); setHistorialId(null); setVincularId(null)
+                        }}
+                        className="text-xs px-3 py-1.5 rounded-xl bg-gray-100 text-gray-600 font-medium hover:bg-gray-200"
+                      >
+                        ✏️ Editar
+                      </button>
+                      {/* Eliminar */}
+                      <button
+                        onClick={() => eliminarMembresia(m.id, m.user_name)}
+                        className="text-xs px-3 py-1.5 rounded-xl bg-red-50 text-red-500 font-medium hover:bg-red-100"
+                      >
+                        🗑
+                      </button>
                       {m.telefono && (
                         <a
                           href={`https://wa.me/549${m.telefono.replace(/\D/g, '')}?text=Hola%20${encodeURIComponent(m.user_name)}!%20Te%20contactamos%20desde%20Oruga%20Cowork%20sobre%20tu%20membresía.`}
@@ -563,6 +648,77 @@ export default function MembersAdminPage() {
                       )}
                     </div>
                   </div>
+
+                  {/* Panel edición */}
+                  {editandoId === m.id && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <p className="text-xs font-semibold text-gray-600 mb-3">Editar membresía</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs text-gray-500 mb-1">Nombre</label>
+                          <input type="text" value={formEdit.user_name}
+                            onChange={e => setFormEdit(f => ({ ...f, user_name: e.target.value }))}
+                            className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-gray-800" />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Plan / Sala</label>
+                          <select value={formEdit.plan}
+                            onChange={e => setFormEdit(f => ({ ...f, plan: e.target.value }))}
+                            className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-gray-800">
+                            {PLANES.map(p => <option key={p}>{p}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Horas totales</label>
+                          <input type="number" min="0" value={formEdit.hours_total}
+                            onChange={e => setFormEdit(f => ({ ...f, hours_total: Number(e.target.value) }))}
+                            className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-gray-800" />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Horas usadas</label>
+                          <input type="number" min="0" value={formEdit.hours_used}
+                            onChange={e => setFormEdit(f => ({ ...f, hours_used: Number(e.target.value) }))}
+                            className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-gray-800" />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Monto mensual ($)</label>
+                          <input type="number" min="0" value={formEdit.monto_mensual}
+                            onChange={e => setFormEdit(f => ({ ...f, monto_mensual: Number(e.target.value) }))}
+                            className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-gray-800" />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Vencimiento</label>
+                          <input type="date" value={formEdit.valid_until}
+                            onChange={e => setFormEdit(f => ({ ...f, valid_until: e.target.value }))}
+                            className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-gray-800" />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Teléfono WhatsApp</label>
+                          <input type="text" value={formEdit.telefono}
+                            onChange={e => setFormEdit(f => ({ ...f, telefono: e.target.value }))}
+                            placeholder="3794123456"
+                            className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-gray-800" />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs text-gray-500 mb-1">Notas</label>
+                          <input type="text" value={formEdit.notas}
+                            onChange={e => setFormEdit(f => ({ ...f, notas: e.target.value }))}
+                            className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-gray-800" />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        <button onClick={() => guardarEdicion(m.id)} disabled={saving}
+                          className="px-4 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                          style={{ background: '#1a2332' }}>
+                          {saving ? 'Guardando...' : 'Guardar cambios'}
+                        </button>
+                        <button onClick={() => setEditandoId(null)}
+                          className="px-4 py-2 rounded-xl text-sm text-gray-600 bg-gray-100 font-medium">
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Panel vincular cuenta */}
                   {vincularId === m.id && (
