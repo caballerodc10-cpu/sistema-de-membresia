@@ -28,6 +28,13 @@ type Payment = {
 }
 
 const METODOS = ['Efectivo', 'Transferencia', 'Mercado Pago', 'Tarjeta']
+const PLANES  = ['Alocasia','Begonia','Pothus 2','Peperomia','Calathea','Pothus','Bromelia','Pandurata','Flex','Flex Compartido','Visitante','Residente','Full']
+
+const SALA_COLORS: Record<string, string> = {
+  'Alocasia':'#E67C73','Begonia':'#0B8043','Pothus 2':'#33B679',
+  'Pandurata':'#7986CB','Peperomia':'#F6BF26','Calathea':'#3F51B5',
+  'Pothus':'#F4511E','Bromelia':'#039BE5',
+}
 
 function mesLabel(mes: string) {
   const [y, m] = mes.split('-')
@@ -63,6 +70,19 @@ export default function MembersAdminPage() {
   const [registrandoId, setRegistrandoId] = useState<string | null>(null)
   const [historialId, setHistorialId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [showNuevo, setShowNuevo] = useState(false)
+
+  const [formNuevo, setFormNuevo] = useState({
+    user_name: '',
+    plan: 'Alocasia',
+    hours_total: '',
+    monto_mensual: '',
+    valid_until: (() => {
+      const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10)
+    })(),
+    telefono: '',
+    notas: '',
+  })
 
   const [formPago, setFormPago] = useState({
     monto: '',
@@ -127,6 +147,34 @@ export default function MembersAdminPage() {
     await load()
   }
 
+  async function crearMembresia() {
+    if (!formNuevo.user_name.trim() || !formNuevo.monto_mensual) return
+    setSaving(true)
+    await fetch('/api/admin/memberships', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: null,
+        user_name: formNuevo.user_name.trim(),
+        plan: formNuevo.plan,
+        hours_total: Number(formNuevo.hours_total) || 0,
+        hours_used: 0,
+        monto_mensual: Number(formNuevo.monto_mensual),
+        valid_until: formNuevo.valid_until || null,
+        telefono: formNuevo.telefono || null,
+        notas: formNuevo.notas || null,
+      }),
+    })
+    setShowNuevo(false)
+    setFormNuevo({
+      user_name: '', plan: 'Alocasia', hours_total: '', monto_mensual: '',
+      valid_until: (() => { const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10) })(),
+      telefono: '', notas: '',
+    })
+    await load()
+    setSaving(false)
+  }
+
   // Métricas
   const totalMensual = members.reduce((a, m) => a + (m.monto_mensual || 0), 0)
   const totalCobrado = members.reduce((a, m) => a + cobradoMes(m.id), 0)
@@ -149,23 +197,113 @@ export default function MembersAdminPage() {
           <h1 className="text-2xl font-bold" style={{ color: '#1a2332' }}>Membresías</h1>
           <p className="text-sm text-gray-500 mt-0.5">{members.length} miembros activos</p>
         </div>
+        <button
+          onClick={() => setShowNuevo(v => !v)}
+          className="px-4 py-2 rounded-xl text-sm font-bold text-white"
+          style={{ background: '#1a2332' }}
+        >
+          {showNuevo ? '✕ Cancelar' : '+ Nueva membresía'}
+        </button>
+      </div>
 
-        {/* Selector de mes */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setMes(prevMes(mes))}
-            className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 shadow-sm"
-          >‹</button>
-          <span className="font-semibold text-gray-800 min-w-36 text-center text-sm">{mesLabel(mes)}</span>
-          <button
-            onClick={() => setMes(nextMes(mes))}
-            disabled={mes >= mesHoy}
-            className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 shadow-sm disabled:opacity-30"
-          >›</button>
-          {mes !== mesHoy && (
-            <button onClick={() => setMes(mesHoy)} className="text-xs text-blue-500 hover:underline">Hoy</button>
-          )}
+      {/* Form nueva membresía */}
+      {showNuevo && (
+        <div className="bg-white rounded-2xl border border-blue-100 shadow-sm p-5">
+          <h3 className="font-bold text-gray-800 mb-4">Alta de membresía</h3>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Nombre del cliente / empresa *</label>
+              <input type="text" value={formNuevo.user_name}
+                onChange={e => setFormNuevo(d => ({ ...d, user_name: e.target.value }))}
+                placeholder="Ej: AWA Consulting, Club Robótica Corrientes..."
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Plan / Sala *</label>
+              <select value={formNuevo.plan}
+                onChange={e => setFormNuevo(d => ({ ...d, plan: e.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800">
+                {PLANES.map(p => <option key={p}>{p}</option>)}
+              </select>
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ background: SALA_COLORS[formNuevo.plan] || '#94a3b8' }} />
+                <span className="text-xs text-gray-400">
+                  {SALA_COLORS[formNuevo.plan] ? 'Sala fija asignada' : 'Acceso flexible'}
+                </span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Horas contratadas (0 = sin límite)</label>
+              <input type="number" min="0" value={formNuevo.hours_total}
+                onChange={e => setFormNuevo(d => ({ ...d, hours_total: e.target.value }))}
+                placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800"
+              />
+              <p className="text-xs text-gray-400 mt-1">Para planes Flex: ingresá las horas del paquete (Ej: 10, 20, 40)</p>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Monto mensual ($) *</label>
+              <input type="number" min="0" value={formNuevo.monto_mensual}
+                onChange={e => setFormNuevo(d => ({ ...d, monto_mensual: e.target.value }))}
+                placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Fecha de vencimiento</label>
+              <input type="date" value={formNuevo.valid_until}
+                onChange={e => setFormNuevo(d => ({ ...d, valid_until: e.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Teléfono WhatsApp (sin 0, sin 15)</label>
+              <input type="text" value={formNuevo.telefono}
+                onChange={e => setFormNuevo(d => ({ ...d, telefono: e.target.value }))}
+                placeholder="Ej: 3794123456"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Notas internas</label>
+              <input type="text" value={formNuevo.notas}
+                onChange={e => setFormNuevo(d => ({ ...d, notas: e.target.value }))}
+                placeholder="Ej: 2 días por semana, acuerdo trimestral, viene los martes..."
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={crearMembresia}
+              disabled={saving || !formNuevo.user_name.trim() || !formNuevo.monto_mensual}
+              className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+              style={{ background: '#1a2332' }}
+            >
+              {saving ? 'Guardando...' : 'Crear membresía'}
+            </button>
+            <button onClick={() => setShowNuevo(false)}
+              className="px-4 py-2.5 rounded-xl text-sm text-gray-600 bg-gray-100 font-medium">
+              Cancelar
+            </button>
+          </div>
         </div>
+      )}
+
+      {/* Selector de mes */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setMes(prevMes(mes))}
+          className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 shadow-sm"
+        >‹</button>
+        <span className="font-semibold text-gray-800 min-w-36 text-center text-sm">{mesLabel(mes)}</span>
+        <button
+          onClick={() => setMes(nextMes(mes))}
+          disabled={mes >= mesHoy}
+          className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 shadow-sm disabled:opacity-30"
+        >›</button>
+        {mes !== mesHoy && (
+          <button onClick={() => setMes(mesHoy)} className="text-xs text-blue-500 hover:underline">Hoy</button>
+        )}
       </div>
 
       {/* Métricas */}
@@ -236,8 +374,8 @@ export default function MembersAdminPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-2">
                         <p className="font-bold text-gray-900 text-base">{m.user_name || '—'}</p>
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                          style={{ background: '#e8eaf6', color: '#3730a3' }}>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white flex items-center gap-1"
+                          style={{ background: SALA_COLORS[m.plan] || '#64748b' }}>
                           {m.plan}
                         </span>
                         {debe > 0 ? (
