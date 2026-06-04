@@ -7,7 +7,7 @@ type Alerta = {
   user_name: string
   plan: string
   telefono: string | null
-  tipo: 'horas_bajas' | 'sin_horas' | 'pago_pendiente' | 'vence_pronto'
+  tipo: 'horas_bajas' | 'sin_horas' | 'pago_pendiente' | 'vence_pronto' | 'nuevo_registro'
   detalle: string
   hours_total?: number
   hours_used?: number
@@ -29,6 +29,8 @@ function buildWAMessage(a: Alerta): string {
     }
     case 'vence_pronto':
       return `Hola ${nombre}! 👋 Tu membresía en Oruga Cowork está próxima a vencer. ¿La renovamos? ¡Te esperamos! 🌿`
+    case 'nuevo_registro':
+      return `Hola! 👋 Gracias por registrarte en Oruga Cowork. Revisamos tu información y te habilitamos el acceso enseguida. ¡Bienvenido/a! 🌿`
     default:
       return `Hola ${nombre}! Te contactamos desde Oruga Cowork. 🌿`
   }
@@ -74,26 +76,28 @@ export default function MembersBell({ isAdmin }: { isAdmin: boolean }) {
   if (!isAdmin) return null
 
   const iconoTipo: Record<string, string> = {
-    horas_bajas: '⏳', sin_horas: '🔴', pago_pendiente: '💰', vence_pronto: '📅'
+    horas_bajas: '⏳', sin_horas: '🔴', pago_pendiente: '💰', vence_pronto: '📅', nuevo_registro: '🆕'
   }
   const colorTipo: Record<string, string> = {
-    horas_bajas:    'bg-amber-100 text-amber-800',
-    sin_horas:      'bg-red-100 text-red-700',
-    pago_pendiente: 'bg-orange-100 text-orange-700',
-    vence_pronto:   'bg-blue-100 text-blue-700',
+    horas_bajas:     'bg-amber-100 text-amber-800',
+    sin_horas:       'bg-red-100 text-red-700',
+    pago_pendiente:  'bg-orange-100 text-orange-700',
+    vence_pronto:    'bg-blue-100 text-blue-700',
+    nuevo_registro:  'bg-purple-100 text-purple-700',
   }
   const tituloTipo: Record<string, string> = {
     horas_bajas:    'Pocas horas',
     sin_horas:      'Sin horas',
     pago_pendiente: 'Pago pendiente',
     vence_pronto:   'Vence pronto',
+    nuevo_registro: 'Nuevo registro',
   }
 
-  // Agrupar por tipo para el badge
   const sinHoras    = alertas.filter(a => a.tipo === 'sin_horas').length
   const horasBajas  = alertas.filter(a => a.tipo === 'horas_bajas').length
   const pagos       = alertas.filter(a => a.tipo === 'pago_pendiente').length
   const vencen      = alertas.filter(a => a.tipo === 'vence_pronto').length
+  const nuevos      = alertas.filter(a => a.tipo === 'nuevo_registro').length
 
   return (
     <div className="relative" ref={ref}>
@@ -126,6 +130,7 @@ export default function MembersBell({ isAdmin }: { isAdmin: boolean }) {
             {/* Mini resumen */}
             {alertas.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
+                {nuevos     > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">🆕 {nuevos} nuevo{nuevos > 1 ? 's' : ''}</span>}
                 {sinHoras   > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">🔴 {sinHoras} sin horas</span>}
                 {horasBajas > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">⏳ {horasBajas} pocas hs</span>}
                 {pagos      > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">💰 {pagos} deben</span>}
@@ -166,15 +171,22 @@ export default function MembersBell({ isAdmin }: { isAdmin: boolean }) {
                         >
                           {isCopied ? '✓ Copiado' : '📋'}
                         </button>
+                        {/* Para nuevo registro → link a crear membresía */}
+                        {a.tipo === 'nuevo_registro' && (
+                          <a href="/members/admin"
+                            className="text-xs px-2 py-1 rounded-lg bg-purple-100 text-purple-700 hover:bg-purple-200 font-medium transition-colors">
+                            + Membresía
+                          </a>
+                        )}
                         {/* Abrir WhatsApp */}
-                        {waLink && (
+                        {a.tipo !== 'nuevo_registro' && waLink && (
                           <a href={waLink} target="_blank" rel="noopener noreferrer"
                             title="Enviar por WhatsApp"
                             className="text-xs px-2 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium transition-colors">
                             WA
                           </a>
                         )}
-                        {!waLink && (
+                        {a.tipo !== 'nuevo_registro' && !waLink && (
                           <span className="text-xs text-gray-300 px-2">sin tel</span>
                         )}
                       </div>

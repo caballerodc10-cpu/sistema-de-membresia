@@ -124,7 +124,20 @@ export default function MembersLoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
+        {/* Registro */}
+        <div className="mt-6 rounded-xl border border-dashed border-gray-200 p-4 text-center bg-gray-50">
+          <p className="text-sm font-semibold text-gray-700 mb-1">¿Primera vez en Oruga?</p>
+          <p className="text-xs text-gray-400 mb-3">
+            Registrate para acceder al portal de membresías y reservas
+          </p>
+          <a href="/register"
+            className="inline-block px-5 py-2 rounded-xl text-sm font-bold text-white"
+            style={{ background: '#1a2332' }}>
+            Crear cuenta →
+          </a>
+        </div>
+
+        <p className="text-center text-xs text-gray-400 mt-4">
           ¿Problemas para ingresar?{' '}
           <a href="https://wa.me/5493794899843" target="_blank" rel="noopener noreferrer"
             className="text-blue-500 hover:underline">

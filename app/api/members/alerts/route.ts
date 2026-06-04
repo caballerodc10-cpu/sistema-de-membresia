@@ -18,12 +18,19 @@ export async function GET() {
     const en7dias = new Date(hoy)
     en7dias.setDate(hoy.getDate() + 7)
 
-    const [{ data: mems }, { data: pays }] = await Promise.all([
+    // Últimas 48hs para detectar registros nuevos
+    const hace48hs = new Date(hoy.getTime() - 48 * 3600000).toISOString()
+
+    const [{ data: mems }, { data: pays }, { data: nuevosPerfiles }] = await Promise.all([
       admin.from('memberships').select('*'),
       admin.from('payments')
         .select('membership_id, monto')
         .gte('fecha', mesHoy + '-01')
         .lte('fecha', mesHoy + '-31'),
+      admin.from('profiles')
+        .select('id, full_name, email, created_at')
+        .gte('created_at', hace48hs)
+        .eq('role', 'user'),
     ])
 
     const cobradoPor: Record<string, number> = {}
@@ -74,6 +81,25 @@ export async function GET() {
             detalle: `Vence el ${vence.toLocaleDateString('es-AR')} · ${m.plan}`,
           })
         }
+      }
+    }
+
+    // Nuevos registros sin membresía (últimas 48hs)
+    const idsConMembresia = new Set((mems || []).map(m => m.user_id).filter(Boolean))
+    for (const p of nuevosPerfiles || []) {
+      if (!idsConMembresia.has(p.id)) {
+        const haceMinutos = Math.round((Date.now() - new Date(p.created_at).getTime()) / 60000)
+        const haceTexto = haceMinutos < 60
+          ? `hace ${haceMinutos} min`
+          : `hace ${Math.round(haceMinutos / 60)} hs`
+        lista.unshift({
+          id: p.id + '_nuevo',
+          user_name: p.full_name || p.email || 'Nuevo usuario',
+          plan: '—',
+          telefono: null,
+          tipo: 'nuevo_registro' as any,
+          detalle: `${p.email} · Se registró ${haceTexto} · Sin membresía asignada`,
+        })
       }
     }
 
