@@ -12,7 +12,7 @@ const navLinks = [
   { href: '/calendar', label: 'Calendario', icon: '📅' },
   { href: '/salas', label: 'Salas', icon: '🏢' },
   { href: '/bookings', label: 'Mis Reservas', icon: '📋' },
-  { href: '/membership', label: 'Membresía', icon: '👥' },
+  { href: '/members/mi-membresia', label: 'Mi Membresía', icon: '⭐' },
 ]
 
 const adminLinks = [

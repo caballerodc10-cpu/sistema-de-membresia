@@ -43,14 +43,28 @@ export default function ClientRequestModal({ onClose, onSaved, initialDate, init
         .eq('id', user.id)
         .single()
 
-      setUserName(profile?.full_name || user.email || '')
+      const fullName = profile?.full_name || ''
+      setUserName(fullName || user.email || '')
 
-      // Buscar membresía del usuario
-      const { data: mem } = await supabase
+      // 1º intento: buscar por user_id
+      let mem: any = null
+      const { data: memById } = await supabase
         .from('memberships')
         .select('id, plan, hours_total, hours_used')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
+
+      mem = memById
+
+      // 2º intento: buscar por full_name si no se encontró por user_id
+      if (!mem && fullName) {
+        const { data: memByName } = await supabase
+          .from('memberships')
+          .select('id, plan, hours_total, hours_used')
+          .eq('user_name', fullName)
+          .maybeSingle()
+        mem = memByName
+      }
 
       if (mem) {
         // Buscar la sala que corresponde al plan

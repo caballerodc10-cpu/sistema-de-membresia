@@ -10,25 +10,38 @@ export async function GET() {
 
     const admin = createAdminSupabaseClient()
 
-    // Obtener membresía del usuario (por user_id o por email en user_name)
-    const { data: membership } = await admin
+    // Obtener perfil del usuario
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', user.id)
+      .single()
+
+    // 1º intento: buscar por user_id (vinculada por el admin)
+    let membership: any = null
+    const { data: memById } = await admin
       .from('memberships')
       .select('*')
       .eq('user_id', user.id)
       .maybeSingle()
 
-    if (!membership) {
-      // Intentar buscar por email si no tiene user_id vinculado
-      const { data: profile } = await admin
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single()
+    membership = memById
 
+    // 2º intento: buscar por full_name exacto (cliente individual)
+    if (!membership && profile?.full_name) {
+      const { data: memByName } = await admin
+        .from('memberships')
+        .select('*')
+        .eq('user_name', profile.full_name)
+        .maybeSingle()
+      membership = memByName
+    }
+
+    if (!membership) {
       return NextResponse.json({ membership: null, payments: [], profile })
     }
 
-    // Todos los pagos de esta membresía (sin filtro de mes, historial completo)
+    // Todos los pagos de esta membresía, historial completo
     const { data: payments } = await admin
       .from('payments')
       .select('*')
