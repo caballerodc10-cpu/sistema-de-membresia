@@ -18,8 +18,19 @@ export default async function MembersProtectedLayout({ children }: { children: R
     .eq('id', user.id)
     .single()
 
-  const isAdmin = profile?.role === 'admin'
-  const userName = profile?.full_name || user.email || ''
+  // Fallback: si el perfil no se encontró por ID, buscar por email
+  let resolvedProfile = profile
+  if (!resolvedProfile && user.email) {
+    const { data: byEmail } = await admin
+      .from('profiles')
+      .select('role, full_name')
+      .eq('email', user.email)
+      .single()
+    resolvedProfile = byEmail
+  }
+
+  const isAdmin = resolvedProfile?.role === 'admin'
+  const userName = resolvedProfile?.full_name || user.email || ''
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#f0f4f8' }}>

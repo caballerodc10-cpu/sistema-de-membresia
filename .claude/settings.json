@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npx vercel ls --json 2>$null)",
+      "PowerShell(npx vercel ls 2>&1)",
+      "PowerShell(npx vercel --prod 2>&1)"
+    ]
+  }
+}

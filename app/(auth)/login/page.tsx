@@ -58,13 +58,87 @@ export default function LoginPage() {
       {/* ── Panel izquierdo: hero ─────────────────────────────── */}
       <div
         className="hidden lg:flex lg:w-1/2 flex-col justify-between px-12 py-10 relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #0a2744 0%, #0d3560 60%, #0a2744 100%)' }}
+        style={{ background: '#071a2e' }}
       >
-        {/* Decoración de fondo */}
-        <div className="absolute inset-0 opacity-5 pointer-events-none"
-          style={{
-            backgroundImage: 'radial-gradient(circle at 20% 80%, #c5e84a 0%, transparent 50%), radial-gradient(circle at 80% 20%, #c5e84a 0%, transparent 50%)',
-          }} />
+        {/* Aurora borealis layers */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="aurora-blob aurora-1" />
+          <div className="aurora-blob aurora-2" />
+          <div className="aurora-blob aurora-3" />
+          <div className="aurora-blob aurora-4" />
+          <div className="aurora-blob aurora-5" />
+          {/* noise grain overlay */}
+          <div className="absolute inset-0 opacity-[0.03]"
+            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'1\'/%3E%3C/svg%3E")', backgroundRepeat: 'repeat', backgroundSize: '128px' }}
+          />
+        </div>
+
+        <style>{`
+          .aurora-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            will-change: transform, opacity;
+          }
+          .aurora-1 {
+            width: 70%; height: 55%;
+            background: radial-gradient(ellipse, rgba(197,232,74,0.22) 0%, rgba(197,232,74,0.08) 50%, transparent 75%);
+            top: 5%; left: -10%;
+            animation: au1 12s ease-in-out infinite;
+          }
+          .aurora-2 {
+            width: 60%; height: 60%;
+            background: radial-gradient(ellipse, rgba(20,184,166,0.2) 0%, rgba(20,184,166,0.07) 50%, transparent 75%);
+            top: 40%; left: 30%;
+            animation: au2 15s ease-in-out infinite;
+          }
+          .aurora-3 {
+            width: 50%; height: 45%;
+            background: radial-gradient(ellipse, rgba(56,189,248,0.18) 0%, rgba(56,189,248,0.06) 50%, transparent 75%);
+            top: -5%; left: 50%;
+            animation: au3 10s ease-in-out infinite;
+          }
+          .aurora-4 {
+            width: 40%; height: 55%;
+            background: radial-gradient(ellipse, rgba(163,230,53,0.15) 0%, rgba(163,230,53,0.05) 50%, transparent 75%);
+            top: 55%; left: -5%;
+            animation: au4 18s ease-in-out infinite;
+          }
+          .aurora-5 {
+            width: 35%; height: 35%;
+            background: radial-gradient(ellipse, rgba(6,182,212,0.16) 0%, rgba(6,182,212,0.05) 50%, transparent 75%);
+            top: 20%; left: 55%;
+            animation: au5 9s ease-in-out infinite;
+          }
+          @keyframes au1 {
+            0%   { transform: translate(0,0) scale(1);    opacity: 0.8; }
+            33%  { transform: translate(5%,8%) scale(1.1); opacity: 1; }
+            66%  { transform: translate(-3%,5%) scale(0.95); opacity: 0.7; }
+            100% { transform: translate(0,0) scale(1);    opacity: 0.8; }
+          }
+          @keyframes au2 {
+            0%   { transform: translate(0,0) scale(1);    opacity: 0.7; }
+            40%  { transform: translate(-6%,-4%) scale(1.08); opacity: 0.9; }
+            70%  { transform: translate(4%,6%) scale(1.05);  opacity: 0.6; }
+            100% { transform: translate(0,0) scale(1);    opacity: 0.7; }
+          }
+          @keyframes au3 {
+            0%   { transform: translate(0,0) scale(1);    opacity: 0.6; }
+            50%  { transform: translate(-4%,5%) scale(1.12); opacity: 0.85; }
+            100% { transform: translate(0,0) scale(1);    opacity: 0.6; }
+          }
+          @keyframes au4 {
+            0%   { transform: translate(0,0) scale(1);    opacity: 0.5; }
+            45%  { transform: translate(8%,-3%) scale(1.1); opacity: 0.8; }
+            100% { transform: translate(0,0) scale(1);    opacity: 0.5; }
+          }
+          @keyframes au5 {
+            0%   { transform: translate(0,0) scale(1);    opacity: 0.65; }
+            35%  { transform: translate(-5%,7%) scale(0.9); opacity: 0.9; }
+            75%  { transform: translate(3%,-4%) scale(1.1); opacity: 0.5; }
+            100% { transform: translate(0,0) scale(1);    opacity: 0.65; }
+          }
+        `}</style>
 
         {/* Logo */}
         <div>
@@ -213,11 +287,33 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full font-bold py-3 rounded-xl transition-opacity disabled:opacity-60 hover:opacity-90 text-sm mt-2"
-              style={{ background: '#0a2744', color: '#c5e84a' }}
+              className="aurora-btn w-full font-bold py-3 rounded-xl text-sm mt-2 relative overflow-hidden disabled:opacity-60"
+              style={{ color: '#0a2744' }}
             >
-              {loading ? 'Ingresando...' : 'Ingresar al sistema'}
+              <span className="relative z-10">{loading ? 'Ingresando...' : 'Ingresar al sistema'}</span>
             </button>
+
+            <style>{`
+              .aurora-btn {
+                background: linear-gradient(270deg, #c5e84a, #7dd35a, #4ade80, #a3e635, #c5e84a);
+                background-size: 300% 300%;
+                animation: aurora-shift 4s ease infinite;
+                box-shadow: 0 0 0 1px rgba(197,232,74,0.4), 0 4px 20px rgba(197,232,74,0.3);
+                transition: box-shadow 0.2s ease, transform 0.1s ease;
+              }
+              .aurora-btn:hover:not(:disabled) {
+                box-shadow: 0 0 0 1px rgba(197,232,74,0.6), 0 6px 28px rgba(197,232,74,0.45);
+                transform: translateY(-1px);
+              }
+              .aurora-btn:active:not(:disabled) {
+                transform: translateY(0);
+              }
+              @keyframes aurora-shift {
+                0%   { background-position: 0% 50%; }
+                50%  { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+              }
+            `}</style>
           </form>
 
           {/* Accesos rápidos */}

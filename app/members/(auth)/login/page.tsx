@@ -24,14 +24,9 @@ export default function MembersLoginPage() {
       setLoading(false)
       return
     }
-    // Obtener rol para redirigir correctamente
-    const res = await fetch('/api/me')
-    const data = await res.json()
-    if (data?.role === 'admin') {
-      router.push('/members/admin')
-    } else {
-      router.push('/members/mi-membresia')
-    }
+    // Redirigir a /members — el server component detecta el rol y redirige correctamente
+    router.push('/members')
+    router.refresh()
   }
 
   return (

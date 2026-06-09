@@ -16,7 +16,7 @@ const navLinks = [
 ]
 
 const adminLinks = [
-  { href: '/admin/dashboard', label: 'Panel Admin', icon: '🛠' },
+  { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
   { href: '/admin/registros', label: 'Registros', icon: '📝' },
   { href: '/admin/memberships', label: 'Membresías', icon: '⭐' },
   { href: '/admin/consumos', label: 'Consumos', icon: '☕' },
@@ -25,37 +25,48 @@ const adminLinks = [
   { href: '/admin/users', label: 'Usuarios', icon: '👥' },
 ]
 
-export default function Navbar({ isAdmin: isAdminProp = false, userName = '' }: { isAdmin?: boolean, userName?: string }) {
+function NavPill({ link, active }: { link: { href: string; label: string; icon: string }; active: boolean; isAdminLink?: boolean }) {
+  return (
+    <Link
+      href={link.href}
+      className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap select-none"
+      style={{
+        background: active ? '#c5e84a' : 'transparent',
+        color: active ? '#0a2744' : 'rgba(255,255,255,0.6)',
+        boxShadow: active
+          ? '0 0 0 1px rgba(197,232,74,0.3), 0 0 16px rgba(197,232,74,0.35), 0 0 32px rgba(197,232,74,0.12)'
+          : 'none',
+        fontWeight: active ? 700 : 500,
+      }}
+    >
+      <span style={{ fontSize: 12 }}>{link.icon}</span>
+      <span>{link.label}</span>
+      {active && (
+        <span
+          className="absolute inset-0 rounded-lg pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.18) 0%, transparent 70%)',
+          }}
+        />
+      )}
+    </Link>
+  )
+}
+
+export default function Navbar({ isAdmin: isAdminProp = false }: { isAdmin?: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
 
-  // Lee de sessionStorage al instante, luego verifica con /api/me
-  const [isAdmin, setIsAdmin] = useState(() => {
-    if (isAdminProp) return true
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('oruga_role') === 'admin'
-    }
-    return false
-  })
+  const [isAdmin, setIsAdmin] = useState(isAdminProp)
 
   useEffect(() => {
-    if (isAdminProp) {
-      setIsAdmin(true)
-      sessionStorage.setItem('oruga_role', 'admin')
-      return
-    }
-    // Usa /api/me que bypasea RLS con service role
+    // Always verify from server — bypasses RLS via service role key
     fetch('/api/me')
       .then(r => r.json())
-      .then(data => {
-        const admin = data?.role === 'admin'
-        setIsAdmin(admin)
-        if (admin) sessionStorage.setItem('oruga_role', 'admin')
-        else sessionStorage.removeItem('oruga_role')
-      })
+      .then(data => { if (data?.role === 'admin') setIsAdmin(true) })
       .catch(() => {})
-  }, [isAdminProp])
+  }, [])
 
   async function handleLogout() {
     const supabase = createClient()
@@ -64,122 +75,185 @@ export default function Navbar({ isAdmin: isAdminProp = false, userName = '' }: 
     router.refresh()
   }
 
+  function isActive(href: string) {
+    if (href === '/home') return pathname === '/home'
+    return pathname === href || pathname.startsWith(href + '/')
+  }
+
   return (
-    <nav style={{ background: '#0a2744' }} className="sticky top-0 z-50 shadow-lg">
+    <nav
+      className="sticky top-0 z-50"
+      style={{
+        background: 'linear-gradient(180deg, #0c2d52 0%, #0a2744 100%)',
+        borderBottom: '1px solid rgba(197,232,74,0.08)',
+        boxShadow: '0 1px 0 rgba(0,0,0,0.3), 0 4px 24px rgba(0,0,0,0.2)',
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-14 gap-3">
+
           {/* Logo */}
-          <Link href="/home" className="flex items-center gap-2">
-            <div className="relative w-32 h-10">
-              <Image src="/logo/logo-oruga-sin-fondo.png" alt="Oruga Cowork" fill className="object-contain object-left brightness-0 invert" />
+          <Link href="/home" className="flex items-center shrink-0">
+            <div className="relative w-28 h-8">
+              <Image
+                src="/logo/logo-oruga-sin-fondo.png"
+                alt="Oruga Cowork"
+                fill
+                className="object-contain object-left brightness-0 invert"
+              />
             </div>
           </Link>
 
-          {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-1">
-            {navLinks.map(link => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === link.href
-                    ? 'text-white'
-                    : 'text-blue-200 hover:text-white hover:bg-white/10'
-                }`}
-                style={pathname === link.href ? { background: 'rgba(197,232,74,0.2)', color: '#c5e84a' } : {}}
-              >
-                <span className="mr-1">{link.icon}</span>
-                {link.label}
-              </Link>
-            ))}
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-2 flex-1 min-w-0">
+            {/* Client links container */}
+            <div
+              className="flex items-center gap-0.5 p-1 rounded-xl"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              {navLinks.map(link => (
+                <NavPill key={link.href} link={link} active={isActive(link.href)} />
+              ))}
+            </div>
+
+            {/* Admin links container */}
             {isAdmin && (
               <>
-                <span className="w-px h-5 bg-white/20 mx-1" />
-                {adminLinks.map(link => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      pathname === link.href ? '' : 'hover:bg-white/10'
-                    }`}
-                    style={pathname === link.href
-                      ? { background: 'rgba(197,232,74,0.2)', color: '#c5e84a' }
-                      : { color: '#c5e84a' }}
-                  >
-                    <span className="mr-1">{link.icon}</span>
-                    {link.label}
-                  </Link>
-                ))}
+                <div className="w-px h-5 shrink-0" style={{ background: 'rgba(197,232,74,0.2)' }} />
+                <div
+                  className="flex items-center gap-0.5 p-1 rounded-xl overflow-x-auto"
+                  style={{
+                    background: 'rgba(197,232,74,0.04)',
+                    border: '1px solid rgba(197,232,74,0.12)',
+                  }}
+                >
+                  {adminLinks.map(link => (
+                    <NavPill key={link.href} link={{ ...link, icon: link.icon }} active={isActive(link.href)} isAdminLink />
+                  ))}
+                </div>
               </>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Right side */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <NotificationBell isAdmin={isAdmin} />
-            <span className="hidden md:block text-xs font-semibold px-2 py-1 rounded-full"
-              style={{ background: isAdmin ? '#c5e84a' : 'rgba(255,255,255,0.15)', color: isAdmin ? '#0a2744' : '#fff' }}>
-              {isAdmin ? '🛠 Admin' : '👤 Cliente'}
-            </span>
+
+            <div
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+              style={{
+                background: isAdmin ? 'rgba(197,232,74,0.12)' : 'rgba(255,255,255,0.07)',
+                border: `1px solid ${isAdmin ? 'rgba(197,232,74,0.25)' : 'rgba(255,255,255,0.1)'}`,
+                color: isAdmin ? '#c5e84a' : 'rgba(255,255,255,0.7)',
+              }}
+            >
+              <span>{isAdmin ? '⚡' : '👤'}</span>
+              <span>{isAdmin ? 'Admin' : 'Cliente'}</span>
+            </div>
+
             <button
               onClick={handleLogout}
-              className="hidden md:block text-sm text-blue-200 hover:text-white font-medium px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
+              className="hidden md:block text-xs px-3 py-1.5 rounded-lg font-medium transition-all duration-200"
+              style={{ color: 'rgba(255,255,255,0.4)' }}
+              onMouseEnter={e => { (e.target as HTMLElement).style.color = 'rgba(255,255,255,0.8)'; (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.06)' }}
+              onMouseLeave={e => { (e.target as HTMLElement).style.color = 'rgba(255,255,255,0.4)'; (e.target as HTMLElement).style.background = 'transparent' }}
             >
               Salir
             </button>
+
+            {/* Hamburger */}
             <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden p-2 rounded-lg text-blue-200 hover:bg-white/10"
+              onClick={() => setMenuOpen(v => !v)}
+              className="md:hidden p-2 rounded-lg transition-colors"
+              style={{ color: 'rgba(255,255,255,0.7)', background: menuOpen ? 'rgba(255,255,255,0.08)' : 'transparent' }}
+              aria-label="Menú"
             >
-              <div className="w-5 space-y-1">
-                <span className="block h-0.5 bg-current"></span>
-                <span className="block h-0.5 bg-current"></span>
-                <span className="block h-0.5 bg-current"></span>
+              <div className="w-5 h-4 flex flex-col justify-between">
+                <span
+                  className="block h-0.5 bg-current rounded-full transition-all duration-200 origin-center"
+                  style={{ transform: menuOpen ? 'translateY(7px) rotate(45deg)' : 'none' }}
+                />
+                <span
+                  className="block h-0.5 bg-current rounded-full transition-all duration-200"
+                  style={{ opacity: menuOpen ? 0 : 1 }}
+                />
+                <span
+                  className="block h-0.5 bg-current rounded-full transition-all duration-200 origin-center"
+                  style={{ transform: menuOpen ? 'translateY(-7px) rotate(-45deg)' : 'none' }}
+                />
               </div>
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Mobile menu */}
-        {menuOpen && (
-          <div className="md:hidden border-t border-white/10 py-2 space-y-1">
-            {navLinks.map(link => (
+      {/* Mobile dropdown */}
+      {menuOpen && (
+        <div
+          className="md:hidden py-2 px-3 space-y-0.5"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: '#091e38' }}
+        >
+          {navLinks.map(link => {
+            const active = isActive(link.href)
+            return (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-blue-200 hover:text-white hover:bg-white/10"
-                style={pathname === link.href ? { color: '#c5e84a', background: 'rgba(197,232,74,0.1)' } : {}}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+                style={{
+                  background: active ? '#c5e84a' : 'transparent',
+                  color: active ? '#0a2744' : 'rgba(255,255,255,0.7)',
+                  boxShadow: active ? '0 0 16px rgba(197,232,74,0.25)' : 'none',
+                  fontWeight: active ? 700 : 500,
+                }}
               >
-                <span>{link.icon}</span>{link.label}
+                <span>{link.icon}</span>
+                {link.label}
               </Link>
-            ))}
-            {isAdmin && (
-              <>
-                <div className="mx-4 my-1 border-t border-white/20" />
-                <p className="px-4 text-xs font-semibold" style={{ color: '#c5e84a' }}>— ADMIN —</p>
-                {adminLinks.map(link => (
+            )
+          })}
+
+          {isAdmin && (
+            <>
+              <div className="mx-2 my-2 border-t" style={{ borderColor: 'rgba(197,232,74,0.12)' }} />
+              <p className="px-4 pb-1 text-xs font-bold tracking-widest uppercase" style={{ color: 'rgba(197,232,74,0.4)' }}>
+                Admin
+              </p>
+              {adminLinks.map(link => {
+                const active = isActive(link.href)
+                return (
                   <Link
                     key={link.href}
                     href={link.href}
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-white/10"
-                    style={pathname === link.href
-                      ? { color: '#c5e84a', background: 'rgba(197,232,74,0.1)' }
-                      : { color: '#c5e84a' }}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+                    style={{
+                      background: active ? '#c5e84a' : 'rgba(197,232,74,0.05)',
+                      color: active ? '#0a2744' : '#c5e84a',
+                      boxShadow: active ? '0 0 16px rgba(197,232,74,0.25)' : 'none',
+                      fontWeight: active ? 700 : 500,
+                    }}
                   >
-                    <span>{link.icon}</span>{link.label}
+                    <span>{link.icon}</span>
+                    {link.label}
                   </Link>
-                ))}
-              </>
-            )}
-            <div className="mx-4 my-1 border-t border-white/10" />
-            <button onClick={handleLogout}
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-300 hover:bg-white/10 rounded-lg">
+                )
+              })}
+            </>
+          )}
+
+          <div className="pt-1 mt-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl font-medium transition-colors"
+              style={{ color: 'rgba(255,255,255,0.35)' }}
+            >
               🚪 Salir
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </nav>
   )
 }

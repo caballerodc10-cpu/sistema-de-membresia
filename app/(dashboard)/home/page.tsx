@@ -41,14 +41,15 @@ export default function HomePage() {
   useEffect(() => { loadData() }, [])
 
   async function loadData() {
+    // Use /api/me for role — reads via service role key, bypasses RLS
+    const meRes = await fetch('/api/me')
+    const me = await meRes.json()
+    setUserName(me?.name || '')
+    setIsAdmin(me?.role === 'admin')
+
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-
-    const { data: profile } = await supabase
-      .from('profiles').select('full_name, role').eq('id', user.id).single()
-    setUserName(profile?.full_name || '')
-    setIsAdmin(profile?.role === 'admin')
 
     const { data: rooms } = await supabase
       .from('rooms').select('id, name, capacity').order('name')
@@ -159,27 +160,39 @@ export default function HomePage() {
               const color = ROOM_COLORS[sala.name] || '#616161'
               return (
                 <div key={sala.id}
-                  className="rounded-xl border p-4 flex flex-col gap-2"
+                  className="rounded-2xl p-4 flex flex-col gap-2.5 transition-all duration-200 hover:-translate-y-0.5"
                   style={{
-                    borderColor: libre ? '#d1fae5' : '#fee2e2',
-                    background: libre ? '#f0fdf4' : '#fff5f5',
+                    background: '#fff',
+                    border: `1.5px solid ${libre ? '#bbf7d0' : '#fecaca'}`,
+                    boxShadow: libre
+                      ? '0 2px 12px rgba(16,185,129,0.08), 0 1px 3px rgba(0,0,0,0.04)'
+                      : '0 2px 12px rgba(239,68,68,0.06), 0 1px 3px rgba(0,0,0,0.04)',
                   }}>
                   <div className="flex items-center justify-between">
-                    <span className="w-3 h-3 rounded-full" style={{ background: color }}></span>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${libre ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                      {libre ? '● Libre' : '● Ocupada'}
+                    <span className="w-3 h-3 rounded-full shadow-sm" style={{ background: color, boxShadow: `0 0 6px ${color}60` }} />
+                    <span
+                      className="text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1"
+                      style={{
+                        background: libre ? '#dcfce7' : '#fee2e2',
+                        color: libre ? '#15803d' : '#dc2626',
+                      }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'currentColor' }} />
+                      {libre ? 'Libre' : 'Ocupada'}
                     </span>
                   </div>
-                  <p className="font-bold text-gray-900 text-sm">{sala.name}</p>
-                  <p className="text-xs text-gray-400">👥 hasta {sala.capacity} personas</p>
+                  <p className="font-bold text-gray-900 text-sm leading-tight">{sala.name}</p>
+                  <p className="text-xs text-gray-400 flex items-center gap-1">
+                    <span>👥</span> hasta {sala.capacity} personas
+                  </p>
                   {!libre && sala.ocupadaHasta && (
-                    <p className="text-xs text-red-500">Libera a las {formatHora(sala.ocupadaHasta)}</p>
+                    <p className="text-xs font-medium" style={{ color: '#dc2626' }}>Libera {formatHora(sala.ocupadaHasta)}</p>
                   )}
                   {libre && sala.proximaReserva && (
-                    <p className="text-xs text-amber-500">Ocupada desde {formatHora(sala.proximaReserva)}</p>
+                    <p className="text-xs font-medium text-amber-500">Ocupada desde {formatHora(sala.proximaReserva)}</p>
                   )}
                   {libre && !sala.proximaReserva && (
-                    <p className="text-xs text-green-500">Disponible todo el día</p>
+                    <p className="text-xs font-medium text-emerald-600">Todo el día libre</p>
                   )}
                 </div>
               )
@@ -191,13 +204,27 @@ export default function HomePage() {
       {/* Resumen rápido */}
       {!loading && (
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-xl border border-gray-100 p-4 text-center shadow-sm">
-            <p className="text-3xl font-bold" style={{ color: '#0B8043' }}>{disponibles.length}</p>
-            <p className="text-sm text-gray-500 mt-1">salas disponibles</p>
+          <div
+            className="rounded-2xl p-5 text-center"
+            style={{
+              background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+              border: '1.5px solid #bbf7d0',
+              boxShadow: '0 2px 12px rgba(16,185,129,0.1)',
+            }}
+          >
+            <p className="text-4xl font-black" style={{ color: '#15803d' }}>{disponibles.length}</p>
+            <p className="text-sm font-medium mt-1" style={{ color: '#166534' }}>salas disponibles</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-4 text-center shadow-sm">
-            <p className="text-3xl font-bold" style={{ color: '#D50000' }}>{ocupadas.length}</p>
-            <p className="text-sm text-gray-500 mt-1">salas ocupadas</p>
+          <div
+            className="rounded-2xl p-5 text-center"
+            style={{
+              background: 'linear-gradient(135deg, #fff5f5, #fee2e2)',
+              border: '1.5px solid #fecaca',
+              boxShadow: '0 2px 12px rgba(239,68,68,0.08)',
+            }}
+          >
+            <p className="text-4xl font-black" style={{ color: '#dc2626' }}>{ocupadas.length}</p>
+            <p className="text-sm font-medium mt-1" style={{ color: '#991b1b' }}>salas ocupadas</p>
           </div>
         </div>
       )}
@@ -207,17 +234,29 @@ export default function HomePage() {
         <h2 className="text-lg font-bold mb-3" style={{ color: '#0a2744' }}>Accesos rápidos</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { href: '/calendar', label: 'Calendario', icon: '📅', desc: 'Ver todas las reservas' },
-            { href: '/salas', label: 'Nuestras salas', icon: '🏢', desc: 'Fotos y disponibilidad' },
-            { href: '/bookings', label: 'Mis reservas', icon: '📋', desc: 'Historial y próximas' },
+            { href: '/calendar', label: 'Calendario', icon: '📅', desc: 'Ver todas las reservas', accent: '#3b82f6' },
+            { href: '/salas', label: 'Nuestras salas', icon: '🏢', desc: 'Fotos y disponibilidad', accent: '#8b5cf6' },
+            { href: '/bookings', label: 'Mis reservas', icon: '📋', desc: 'Historial y próximas', accent: '#f59e0b' },
             isAdmin
-              ? { href: '/admin/finances', label: 'Finanzas', icon: '💰', desc: 'Ingresos y egresos' }
-              : { href: '/membership', label: 'Membresía', icon: '⭐', desc: 'Tu plan actual' },
+              ? { href: '/admin/finances', label: 'Finanzas', icon: '💰', desc: 'Ingresos y egresos', accent: '#10b981' }
+              : { href: '/membership', label: 'Membresía', icon: '⭐', desc: 'Tu plan actual', accent: '#f59e0b' },
           ].map(item => (
             <Link key={item.href} href={item.href}
-              className="bg-white rounded-xl border border-gray-100 p-4 hover:border-blue-200 hover:shadow-sm transition-all">
-              <span className="text-2xl">{item.icon}</span>
-              <p className="font-semibold text-gray-900 text-sm mt-2">{item.label}</p>
+              className="group bg-white rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5"
+              style={{
+                border: '1.5px solid #f1f5f9',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = item.accent + '40'; (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 16px ${item.accent}18` }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#f1f5f9'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)' }}
+            >
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-3"
+                style={{ background: item.accent + '15' }}
+              >
+                {item.icon}
+              </div>
+              <p className="font-bold text-gray-900 text-sm">{item.label}</p>
               <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
             </Link>
           ))}
