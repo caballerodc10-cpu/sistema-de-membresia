@@ -10,18 +10,16 @@ import NotificationBell from '@/components/NotificationBell'
 const navLinks = [
   { href: '/home', label: 'Inicio', icon: '🏠' },
   { href: '/calendar', label: 'Calendario', icon: '📅' },
-  { href: '/salas', label: 'Salas', icon: '🏢' },
   { href: '/bookings', label: 'Mis Reservas', icon: '📋' },
-  { href: '/members/mi-membresia', label: 'Mi Membresía', icon: '⭐' },
+  { href: '/members/mi-membresia', label: 'Mi Membresía', icon: '🪴' },
 ]
 
 const adminLinks = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
   { href: '/admin/registros', label: 'Registros', icon: '📝' },
-  { href: '/admin/memberships', label: 'Membresías', icon: '⭐' },
+  { href: '/admin/memberships', label: 'Membresías', icon: '🪴' },
   { href: '/admin/consumos', label: 'Consumos', icon: '☕' },
   { href: '/admin/finances', label: 'Finanzas', icon: '💰' },
-  { href: '/admin/rooms', label: 'Salas', icon: '🏢' },
   { href: '/admin/users', label: 'Usuarios', icon: '👥' },
 ]
 
