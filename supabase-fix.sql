@@ -26,3 +26,12 @@ $$;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure handle_new_user();
+
+
+-- ============================================================
+-- FIX: Asignar rol admin al usuario administrador
+-- Ejecutar en: supabase.com → tu proyecto → SQL Editor → Run
+-- ============================================================
+UPDATE profiles 
+SET role = 'admin' 
+WHERE email = 'caballerodc.10@gmail.com';
