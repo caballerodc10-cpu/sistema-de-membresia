@@ -22,7 +22,7 @@ const adminLinks = [
   { href: '/admin/users', label: 'Usuarios', icon: '👥' },
 ]
 
-function NavPill({ link, active }: { link: { href: string; label: string; icon: string }; active: boolean; isAdminLink?: boolean }) {
+function NavPill({ link, active }: { link: { href: string; label: string; icon: string }; active: boolean }) {
   return (
     <Link
       href={link.href}
@@ -63,6 +63,9 @@ export default function Navbar({ isAdmin: isAdminProp = false }: { isAdmin?: boo
       .catch(() => {})
   }, [])
 
+  // Close menu on route change
+  useEffect(() => { setMenuOpen(false) }, [pathname])
+
   async function handleLogout() {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -101,9 +104,8 @@ export default function Navbar({ isAdmin: isAdminProp = false }: { isAdmin?: boo
             </div>
           </Link>
 
-          {/* Desktop nav */}
+          {/* Desktop nav — only client links as pills, NO admin scrollbar */}
           <div className="hidden md:flex items-center gap-2 flex-1 min-w-0">
-            {/* Client links container */}
             <div
               className="flex items-center gap-0.5 p-1 rounded-xl"
               style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
@@ -112,30 +114,13 @@ export default function Navbar({ isAdmin: isAdminProp = false }: { isAdmin?: boo
                 <NavPill key={link.href} link={link} active={isActive(link.href)} />
               ))}
             </div>
-
-            {/* Admin links container */}
-            {isAdmin && (
-              <>
-                <div className="w-px h-5 shrink-0" style={{ background: 'rgba(197,232,74,0.2)' }} />
-                <div
-                  className="flex items-center gap-0.5 p-1 rounded-xl overflow-x-auto"
-                  style={{
-                    background: 'rgba(197,232,74,0.04)',
-                    border: '1px solid rgba(197,232,74,0.12)',
-                  }}
-                >
-                  {adminLinks.map(link => (
-                    <NavPill key={link.href} link={{ ...link, icon: link.icon }} active={isActive(link.href)} isAdminLink />
-                  ))}
-                </div>
-              </>
-            )}
           </div>
 
           {/* Right side */}
           <div className="flex items-center gap-1.5 shrink-0">
             <NotificationBell isAdmin={isAdmin} />
 
+            {/* Role badge — desktop only */}
             <div
               className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
               style={{
@@ -148,21 +133,14 @@ export default function Navbar({ isAdmin: isAdminProp = false }: { isAdmin?: boo
               <span>{isAdmin ? 'Admin' : 'Cliente'}</span>
             </div>
 
-            <button
-              onClick={handleLogout}
-              className="hidden md:block text-xs px-3 py-1.5 rounded-lg font-medium transition-all duration-200"
-              style={{ color: 'rgba(255,255,255,0.4)' }}
-              onMouseEnter={e => { (e.target as HTMLElement).style.color = 'rgba(255,255,255,0.8)'; (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.06)' }}
-              onMouseLeave={e => { (e.target as HTMLElement).style.color = 'rgba(255,255,255,0.4)'; (e.target as HTMLElement).style.background = 'transparent' }}
-            >
-              Salir
-            </button>
-
-            {/* Hamburger */}
+            {/* Hamburger — always visible, opens slide-down menu */}
             <button
               onClick={() => setMenuOpen(v => !v)}
-              className="md:hidden p-2 rounded-lg transition-colors"
-              style={{ color: 'rgba(255,255,255,0.7)', background: menuOpen ? 'rgba(255,255,255,0.08)' : 'transparent' }}
+              className="p-2 rounded-lg transition-colors"
+              style={{
+                color: menuOpen ? '#c5e84a' : 'rgba(255,255,255,0.7)',
+                background: menuOpen ? 'rgba(197,232,74,0.1)' : 'transparent',
+              }}
               aria-label="Menu"
             >
               <div className="w-5 h-4 flex flex-col justify-between">
@@ -184,12 +162,13 @@ export default function Navbar({ isAdmin: isAdminProp = false }: { isAdmin?: boo
         </div>
       </div>
 
-      {/* Mobile dropdown */}
+      {/* Slide-down menu — all screen sizes */}
       {menuOpen && (
         <div
-          className="md:hidden py-2 px-3 space-y-0.5"
+          className="py-2 px-3 space-y-0.5"
           style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: '#091e38' }}
         >
+          {/* Client links */}
           {visibleNavLinks.map(link => {
             const active = isActive(link.href)
             return (
@@ -211,10 +190,11 @@ export default function Navbar({ isAdmin: isAdminProp = false }: { isAdmin?: boo
             )
           })}
 
+          {/* Admin links */}
           {isAdmin && (
             <>
-              <div className="mx-2 my-2 border-t" style={{ borderColor: 'rgba(197,232,74,0.12)' }} />
-              <p className="px-4 pb-1 text-xs font-bold tracking-widest uppercase" style={{ color: 'rgba(197,232,74,0.4)' }}>
+              <div className="mx-2 my-2 border-t" style={{ borderColor: 'rgba(197,232,74,0.15)' }} />
+              <p className="px-4 pb-1 text-[10px] font-black tracking-widest uppercase" style={{ color: 'rgba(197,232,74,0.45)' }}>
                 Admin
               </p>
               {adminLinks.map(link => {
@@ -240,13 +220,14 @@ export default function Navbar({ isAdmin: isAdminProp = false }: { isAdmin?: boo
             </>
           )}
 
+          {/* Logout */}
           <div className="pt-1 mt-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl font-medium transition-colors"
               style={{ color: 'rgba(255,255,255,0.35)' }}
             >
-              Salir
+              🚪 Salir
             </button>
           </div>
         </div>
