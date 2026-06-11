@@ -6,14 +6,14 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase'
 
 const ROOM_COLORS: Record<string, string> = {
-  'Alocasia':  '#E67C73',
-  'Begonia':   '#0B8043',
-  'Pothus 2':  '#33B679',
+  'Alocasia': '#E67C73',
+  'Begonia': '#0B8043',
+  'Pothus 2': '#33B679',
   'Pandurata': '#7986CB',
   'Peperomia': '#F6BF26',
-  'Calathea':  '#3F51B5',
-  'Pothus':    '#F4511E',
-  'Bromelia':  '#039BE5',
+  'Calathea': '#3F51B5',
+  'Pothus': '#F4511E',
+  'Bromelia': '#039BE5',
 }
 
 type SalaStatus = {
@@ -41,7 +41,6 @@ export default function HomePage() {
   useEffect(() => { loadData() }, [])
 
   async function loadData() {
-    // Use /api/me for role — reads via service role key, bypasses RLS
     const meRes = await fetch('/api/me')
     const me = await meRes.json()
     setUserName(me?.name || '')
@@ -100,13 +99,10 @@ export default function HomePage() {
     <div className="space-y-6">
       {/* Hero con fotos reales */}
       <div className="relative rounded-2xl overflow-hidden" style={{ minHeight: 220, background: '#0a2744' }}>
-        {/* Foto hero */}
         <div className="absolute inset-0">
           <Image src="/hero-oruga.png" alt="Oruga Coworking" fill className="object-cover" />
         </div>
-        {/* Overlay degradado */}
         <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(10,39,68,0.7) 0%, rgba(10,39,68,0.3) 100%)' }} />
-        {/* Contenido */}
         <div className="relative z-10 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" style={{ minHeight: 220 }}>
           <div className="flex flex-col justify-center">
             <div className="relative w-36 h-14 mb-3">
@@ -125,21 +121,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Galería rápida del espacio */}
-      <div>
-        <h2 className="text-base font-semibold mb-2" style={{ color: '#0a2744' }}>Nuestro espacio</h2>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          {['/salas/alocasia-real-1.jpg', '/salas/begonia-real-1.jpg', '/salas/calathea-real-1.jpg', '/salas/cafeteria-real.jpg', '/salas/patio-real.jpg', '/salas/escalera-real.jpg'].map((src, i) => (
-            <div key={i} className="relative rounded-xl overflow-hidden aspect-square">
-              <Image src={src} alt={`Oruga ${i+1}`} fill className="object-cover hover:scale-105 transition-transform duration-300" />
-            </div>
-          ))}
-        </div>
-        <div className="text-right mt-1">
-          <a href="/salas" className="text-xs font-medium hover:underline" style={{ color: '#0a2744' }}>Ver todas las salas →</a>
-        </div>
-      </div>
-
       {/* Disponibilidad ahora */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -147,7 +128,7 @@ export default function HomePage() {
             Disponibilidad ahora
           </h2>
           <Link href="/calendar" className="text-sm font-medium hover:underline" style={{ color: '#0a2744' }}>
-            Ver calendario →
+            Ver calendario &#x2192;
           </Link>
         </div>
 
@@ -183,7 +164,7 @@ export default function HomePage() {
                   </div>
                   <p className="font-bold text-gray-900 text-sm leading-tight">{sala.name}</p>
                   <p className="text-xs text-gray-400 flex items-center gap-1">
-                    <span>👥</span> hasta {sala.capacity} personas
+                    <span>&#x1F465;</span> hasta {sala.capacity} personas
                   </p>
                   {!libre && sala.ocupadaHasta && (
                     <p className="text-xs font-medium" style={{ color: '#dc2626' }}>Libera {formatHora(sala.ocupadaHasta)}</p>
@@ -201,7 +182,7 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* Resumen rápido */}
+      {/* Resumen rapido */}
       {!loading && (
         <div className="grid grid-cols-2 gap-3">
           <div
@@ -229,17 +210,17 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Accesos rápidos */}
+      {/* Accesos rapidos */}
       <div>
-        <h2 className="text-lg font-bold mb-3" style={{ color: '#0a2744' }}>Accesos rápidos</h2>
+        <h2 className="text-lg font-bold mb-3" style={{ color: '#0a2744' }}>Accesos rapidos</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { href: '/calendar', label: 'Calendario', icon: '📅', desc: 'Ver todas las reservas', accent: '#3b82f6' },
-            { href: '/salas', label: 'Nuestras salas', icon: '🏢', desc: 'Fotos y disponibilidad', accent: '#8b5cf6' },
-            { href: '/bookings', label: 'Mis reservas', icon: '📋', desc: 'Historial y próximas', accent: '#f59e0b' },
+            { href: '/calendar', label: 'Calendario', icon: '&#x1F4C5;', desc: 'Ver todas las reservas', accent: '#3b82f6' },
+            { href: '/salas', label: 'Nuestras salas', icon: '&#x1F3E2;', desc: 'Fotos y disponibilidad', accent: '#8b5cf6' },
+            { href: '/bookings', label: 'Mis reservas', icon: '&#x1F4CB;', desc: 'Historial y proximas', accent: '#f59e0b' },
             isAdmin
-              ? { href: '/admin/finances', label: 'Finanzas', icon: '💰', desc: 'Ingresos y egresos', accent: '#10b981' }
-              : { href: '/membership', label: 'Membresía', icon: '⭐', desc: 'Tu plan actual', accent: '#f59e0b' },
+              ? { href: '/admin/finances', label: 'Finanzas', icon: '&#x1F4B0;', desc: 'Ingresos y egresos', accent: '#10b981' }
+              : { href: '/membership', label: 'Membresia', icon: '&#x2B50;', desc: 'Tu plan actual', accent: '#f59e0b' },
           ].map(item => (
             <Link key={item.href} href={item.href}
               className="group bg-white rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5"
@@ -253,9 +234,8 @@ export default function HomePage() {
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-3"
                 style={{ background: item.accent + '15' }}
-              >
-                {item.icon}
-              </div>
+                dangerouslySetInnerHTML={{ __html: item.icon }}
+              />
               <p className="font-bold text-gray-900 text-sm">{item.label}</p>
               <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
             </Link>
@@ -263,24 +243,23 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Panel Admin — solo visible para admins */}
+      {/* Panel Admin - solo visible para admins */}
       {isAdmin && (
         <div className="rounded-2xl overflow-hidden border-2 shadow-sm" style={{ borderColor: '#c5e84a' }}>
           <div className="px-5 py-3 flex items-center gap-2" style={{ background: '#0a2744' }}>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: '#c5e84a', color: '#0a2744' }}>🛠 ADMIN</span>
-            <p className="text-white font-semibold text-sm">Panel de administración</p>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: '#c5e84a', color: '#0a2744' }}>&#x1F6E0; ADMIN</span>
+            <p className="text-white font-semibold text-sm">Panel de administracion</p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-0 bg-white divide-x divide-gray-100">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 bg-white divide-x divide-gray-100">
             {[
-              { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
-              { href: '/admin/memberships', label: 'Membresías', icon: '⭐' },
-              { href: '/admin/consumos', label: 'Consumos', icon: '☕' },
-              { href: '/admin/finances', label: 'Finanzas', icon: '💰' },
-              { href: '/admin/users', label: 'Usuarios', icon: '👥' },
+              { href: '/admin/dashboard', label: 'Dashboard', icon: '&#x1F4CA;' },
+              { href: '/admin/memberships', label: 'Membresias', icon: '&#x2B50;' },
+              { href: '/admin/finances', label: 'Finanzas', icon: '&#x1F4B0;' },
+              { href: '/admin/users', label: 'Usuarios', icon: '&#x1F465;' },
             ].map(item => (
               <Link key={item.href} href={item.href}
                 className="flex flex-col items-center justify-center gap-1 py-4 hover:bg-gray-50 transition-colors">
-                <span className="text-xl">{item.icon}</span>
+                <span className="text-xl" dangerouslySetInnerHTML={{ __html: item.icon }} />
                 <span className="text-xs font-medium text-gray-700">{item.label}</span>
               </Link>
             ))}
@@ -295,7 +274,7 @@ export default function HomePage() {
           className="flex items-center justify-between rounded-xl p-4 transition-opacity hover:opacity-90"
           style={{ background: '#0a2744' }}>
           <div>
-            <p className="text-white font-semibold">¿Querés reservar?</p>
+            <p className="text-white font-semibold">Queres reservar?</p>
             <p className="text-blue-200 text-sm">Escribinos por WhatsApp</p>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm"
@@ -309,4 +288,4 @@ export default function HomePage() {
       )}
     </div>
   )
-}
+              }
