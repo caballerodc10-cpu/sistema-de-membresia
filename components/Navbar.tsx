@@ -11,14 +11,13 @@ const navLinks = [
   { href: '/home', label: 'Inicio', icon: '🏠' },
   { href: '/calendar', label: 'Calendario', icon: '📅' },
   { href: '/bookings', label: 'Mis Reservas', icon: '📋' },
-  { href: '/members/mi-membresia', label: 'Mi Membresía', icon: '🪴' },
+  { href: '/members/mi-membresia', label: 'Mi Membresía', icon: '🪴', onlyClient: true },
 ]
 
 const adminLinks = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
   { href: '/admin/registros', label: 'Registros', icon: '📝' },
   { href: '/admin/memberships', label: 'Membresías', icon: '🪴' },
-  { href: '/admin/consumos', label: 'Consumos', icon: '☕' },
   { href: '/admin/finances', label: 'Finanzas', icon: '💰' },
   { href: '/admin/users', label: 'Usuarios', icon: '👥' },
 ]
@@ -55,11 +54,9 @@ export default function Navbar({ isAdmin: isAdminProp = false }: { isAdmin?: boo
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
-
   const [isAdmin, setIsAdmin] = useState(isAdminProp)
 
   useEffect(() => {
-    // Always verify from server — bypasses RLS via service role key
     fetch('/api/me')
       .then(r => r.json())
       .then(data => { if (data?.role === 'admin') setIsAdmin(true) })
@@ -77,6 +74,8 @@ export default function Navbar({ isAdmin: isAdminProp = false }: { isAdmin?: boo
     if (href === '/home') return pathname === '/home'
     return pathname === href || pathname.startsWith(href + '/')
   }
+
+  const visibleNavLinks = navLinks.filter(link => !('onlyClient' in link && link.onlyClient && isAdmin))
 
   return (
     <nav
@@ -109,7 +108,7 @@ export default function Navbar({ isAdmin: isAdminProp = false }: { isAdmin?: boo
               className="flex items-center gap-0.5 p-1 rounded-xl"
               style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
             >
-              {navLinks.map(link => (
+              {visibleNavLinks.map(link => (
                 <NavPill key={link.href} link={link} active={isActive(link.href)} />
               ))}
             </div>
@@ -164,7 +163,7 @@ export default function Navbar({ isAdmin: isAdminProp = false }: { isAdmin?: boo
               onClick={() => setMenuOpen(v => !v)}
               className="md:hidden p-2 rounded-lg transition-colors"
               style={{ color: 'rgba(255,255,255,0.7)', background: menuOpen ? 'rgba(255,255,255,0.08)' : 'transparent' }}
-              aria-label="Menú"
+              aria-label="Menu"
             >
               <div className="w-5 h-4 flex flex-col justify-between">
                 <span
@@ -191,7 +190,7 @@ export default function Navbar({ isAdmin: isAdminProp = false }: { isAdmin?: boo
           className="md:hidden py-2 px-3 space-y-0.5"
           style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: '#091e38' }}
         >
-          {navLinks.map(link => {
+          {visibleNavLinks.map(link => {
             const active = isActive(link.href)
             return (
               <Link
@@ -247,7 +246,7 @@ export default function Navbar({ isAdmin: isAdminProp = false }: { isAdmin?: boo
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl font-medium transition-colors"
               style={{ color: 'rgba(255,255,255,0.35)' }}
             >
-              🚪 Salir
+              Salir
             </button>
           </div>
         </div>
