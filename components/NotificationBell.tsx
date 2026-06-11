@@ -14,9 +14,9 @@ type Alerta = {
 }
 
 function buildMsg(nombre: string, tipo: Alerta['tipo'], detalle: string) {
-  if (tipo === 'horas_bajas') return `¡Hola ${nombre}! 👋 Te avisamos desde Oruga que tu saldo de horas está por agotarse. ${detalle}\n\n¿Querés recargar antes de que se te corte el acceso? Escribinos y lo resolvemos en 2 minutos. 🚀\n\n— Equipo Oruga Coworking`
-  if (tipo === 'sin_horas') return `¡Hola ${nombre}! 👋 Queremos avisarte que tus horas en Oruga se agotaron. ${detalle}\n\nPara seguir usando el espacio, coordinemos la recarga. ¡Nos encargamos rápido! 🚀\n\n— Equipo Oruga Coworking`
-  return `¡Hola ${nombre}! 👋 Te recordamos desde Oruga que tenés un saldo pendiente de pago. ${detalle}\n\nCuando puedas, coordinamos el pago. ¡Estamos a disposición! 💪\n\n— Equipo Oruga Coworking`
+  if (tipo === 'horas_bajas') return `Hola ${nombre}! Te avisamos desde Oruga que tu saldo de horas esta por agotarse. ${detalle}\n\nQueres recargar antes de que se te corte el acceso? Escribinos y lo resolvemos en 2 minutos.\n\n— Equipo Oruga Coworking`
+  if (tipo === 'sin_horas') return `Hola ${nombre}! Queremos avisarte que tus horas en Oruga se agotaron. ${detalle}\n\nPara seguir usando el espacio, coordinemos la recarga.\n\n— Equipo Oruga Coworking`
+  return `Hola ${nombre}! Te recordamos desde Oruga que tenes un saldo pendiente de pago. ${detalle}\n\nCuando puedas, coordinamos el pago. Estamos a disposicion!\n\n— Equipo Oruga Coworking`
 }
 
 function getInitials(name: string) {
@@ -25,9 +25,9 @@ function getInitials(name: string) {
 
 const TIPO_CONFIG = {
   reserva_pendiente: { label: 'Reserva pendiente', color: '#3b82f6', bg: '#eff6ff', dot: '#3b82f6', icon: '🕐' },
-  sin_horas:         { label: 'Sin horas',         color: '#dc2626', bg: '#fef2f2', dot: '#dc2626', icon: '🔴' },
-  horas_bajas:       { label: 'Horas bajas',        color: '#d97706', bg: '#fffbeb', dot: '#f59e0b', icon: '⚠️' },
-  pago_pendiente:    { label: 'Pago pendiente',     color: '#ea580c', bg: '#fff7ed', dot: '#f97316', icon: '💳' },
+  sin_horas: { label: 'Sin horas', color: '#dc2626', bg: '#fef2f2', dot: '#dc2626', icon: '🔴' },
+  horas_bajas: { label: 'Horas bajas', color: '#d97706', bg: '#fffbeb', dot: '#f59e0b', icon: '⚠️' },
+  pago_pendiente: { label: 'Pago pendiente', color: '#ea580c', bg: '#fff7ed', dot: '#f97316', icon: '💳' },
 }
 
 const AVATAR_COLORS = [
@@ -62,65 +62,72 @@ export default function NotificationBell({ isAdmin }: { isAdmin: boolean }) {
 
   async function loadAlertas() {
     setLoading(true)
-    const supabase = createClient()
-    const mesHoy = new Date().toISOString().slice(0, 7)
+    try {
+      const supabase = createClient()
+      const mesHoy = new Date().toISOString().slice(0, 7)
 
-    const [{ data: mems }, { data: pays }, { data: pendingBookings }] = await Promise.all([
-      supabase.from('memberships').select('*'),
-      supabase.from('payments')
-        .select('membership_id, monto')
-        .gte('fecha', mesHoy + '-01')
-        .lte('fecha', mesHoy + '-31'),
-      supabase.from('bookings')
-        .select('id, user_name, start_time, end_time, rooms(name)')
-        .eq('status', 'pending')
-        .order('start_time', { ascending: true }),
-    ])
+      const [{ data: mems, error: memsError }, { data: pendingBookings, error: bookingsError }] = await Promise.all([
+        supabase.from('memberships').select('*'),
+        supabase
+          .from('bookings')
+          .select('id, user_name, start_time, end_time, rooms(name)')
+          .eq('status', 'pending')
+          .order('start_time', { ascending: true }),
+      ])
 
-    const cobradoPor: Record<string, number> = {}
-    for (const p of pays || []) {
-      cobradoPor[p.membership_id] = (cobradoPor[p.membership_id] || 0) + p.monto
-    }
+      if (memsError) console.error('memberships error:', memsError)
+      if (bookingsError) console.error('bookings error:', bookingsError)
 
-    const lista: Alerta[] = []
+      const lista: Alerta[] = []
 
-    for (const b of pendingBookings || []) {
-      const roomName = (b.rooms as any)?.name || 'sala'
-      const fecha = new Date(b.start_time).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })
-      const h1 = new Date(b.start_time).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
-      const h2 = new Date(b.end_time).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
-      lista.push({
-        id: b.id + '_rp',
-        user_name: b.user_name || 'Cliente',
-        telefono: null,
-        tipo: 'reserva_pendiente',
-        detalle: `${roomName} · ${fecha} de ${h1} a ${h2}`,
-        mensaje: '',
-        booking_id: b.id,
-      })
-    }
-
-    for (const m of mems || []) {
-      const horasRestantes = m.hours_total > 0 ? m.hours_total - m.hours_used : null
-      const cobrado = cobradoPor[m.id] || 0
-      const saldo = Math.max(0, (m.monto_mensual || 0) - cobrado)
-
-      if (horasRestantes !== null && horasRestantes <= 0) {
-        const det = `Ya usaste todas las ${m.hours_total}hs de tu membresía ${m.plan}.`
-        lista.push({ id: m.id + '_sh', user_name: m.user_name, telefono: m.telefono, tipo: 'sin_horas', detalle: det, mensaje: buildMsg(m.user_name, 'sin_horas', det) })
-      } else if (horasRestantes !== null && horasRestantes <= 3) {
-        const det = `Te quedan solo ${horasRestantes}hs de tu membresía ${m.plan}.`
-        lista.push({ id: m.id + '_hb', user_name: m.user_name, telefono: m.telefono, tipo: 'horas_bajas', detalle: det, mensaje: buildMsg(m.user_name, 'horas_bajas', det) })
+      for (const b of pendingBookings || []) {
+        const roomName = (b.rooms as any)?.name || 'sala'
+        const fecha = new Date(b.start_time).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })
+        const h1 = new Date(b.start_time).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+        const h2 = new Date(b.end_time).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+        lista.push({
+          id: b.id + '_rp',
+          user_name: b.user_name || 'Cliente',
+          telefono: null,
+          tipo: 'reserva_pendiente',
+          detalle: `${roomName} · ${fecha} de ${h1} a ${h2}`,
+          mensaje: '',
+          booking_id: b.id,
+        })
       }
 
-      if (saldo > 0 && m.monto_mensual > 0) {
-        const det = `Tenés $${Math.round(saldo).toLocaleString('es-AR')} pendientes de tu membresía ${m.plan}.`
-        lista.push({ id: m.id + '_pp', user_name: m.user_name, telefono: m.telefono, tipo: 'pago_pendiente', detalle: det, mensaje: buildMsg(m.user_name, 'pago_pendiente', det) })
-      }
-    }
+      for (const m of mems || []) {
+        const horasRestantes = m.hours_total > 0 ? m.hours_total - m.hours_used : null
 
-    setAlertas(lista)
-    setLoading(false)
+        if (horasRestantes !== null && horasRestantes <= 0) {
+          const det = `Ya usaste todas las ${m.hours_total}hs de tu membresia ${m.plan}.`
+          lista.push({
+            id: m.id + '_sh',
+            user_name: m.user_name || 'Cliente',
+            telefono: m.telefono || null,
+            tipo: 'sin_horas',
+            detalle: det,
+            mensaje: buildMsg(m.user_name || 'Cliente', 'sin_horas', det),
+          })
+        } else if (horasRestantes !== null && horasRestantes <= 3) {
+          const det = `Te quedan solo ${horasRestantes}hs de tu membresia ${m.plan}.`
+          lista.push({
+            id: m.id + '_hb',
+            user_name: m.user_name || 'Cliente',
+            telefono: m.telefono || null,
+            tipo: 'horas_bajas',
+            detalle: det,
+            mensaje: buildMsg(m.user_name || 'Cliente', 'horas_bajas', det),
+          })
+        }
+      }
+
+      setAlertas(lista)
+    } catch (err) {
+      console.error('NotificationBell error:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function aprobarReserva(bookingId: string) {
@@ -192,7 +199,7 @@ export default function NotificationBell({ isAdmin }: { isAdmin: boolean }) {
           <style>{`
             @keyframes notif-in {
               from { opacity: 0; transform: scale(0.94) translateY(-8px); }
-              to   { opacity: 1; transform: scale(1)    translateY(0); }
+              to { opacity: 1; transform: scale(1) translateY(0); }
             }
           `}</style>
 
@@ -236,17 +243,14 @@ export default function NotificationBell({ isAdmin }: { isAdmin: boolean }) {
               </div>
             ) : (
               <div>
-                {/* Urgentes */}
                 {urgentes.length > 0 && (
                   <div>
                     <p className="px-4 pt-3 pb-1.5 text-[10px] font-black uppercase tracking-widest text-red-400">
-                      Requieren atención
+                      Requieren atencion
                     </p>
                     {urgentes.map(a => <AlertCard key={a.id} a={a} expanded={expanded} setExpanded={setExpanded} onAprobar={aprobarReserva} onRechazar={rechazarReserva} />)}
                   </div>
                 )}
-
-                {/* Resto */}
                 {resto.length > 0 && (
                   <div>
                     <p className="px-4 pt-3 pb-1.5 text-[10px] font-black uppercase tracking-widest" style={{ color: '#94a3b8' }}>
@@ -285,20 +289,16 @@ function AlertCard({ a, expanded, setExpanded, onAprobar, onRechazar }: {
         boxShadow: isExpanded ? `0 2px 12px ${cfg.color}15` : 'none',
       }}
     >
-      {/* Card header — siempre visible */}
       <button
         className="w-full flex items-center gap-3 px-3 py-3 text-left transition-colors"
         onClick={() => setExpanded(isExpanded ? null : a.id)}
       >
-        {/* Avatar */}
         <div
           className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center text-xs font-black text-white"
           style={{ background: bgColor }}
         >
           {initials}
         </div>
-
-        {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <p className="text-sm font-bold text-gray-900 truncate">{a.user_name}</p>
@@ -311,8 +311,6 @@ function AlertCard({ a, expanded, setExpanded, onAprobar, onRechazar }: {
           </div>
           <p className="text-xs text-gray-500 truncate">{a.detalle}</p>
         </div>
-
-        {/* Chevron */}
         <svg
           width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5"
           className="shrink-0 transition-transform duration-200"
@@ -322,7 +320,6 @@ function AlertCard({ a, expanded, setExpanded, onAprobar, onRechazar }: {
         </svg>
       </button>
 
-      {/* Expanded actions */}
       {isExpanded && (
         <div className="px-3 pb-3">
           {a.tipo === 'reserva_pendiente' ? (
@@ -346,7 +343,6 @@ function AlertCard({ a, expanded, setExpanded, onAprobar, onRechazar }: {
             </div>
           ) : (
             <div className="space-y-2">
-              {/* Preview mensaje */}
               <div
                 className="rounded-xl p-3 text-xs leading-relaxed whitespace-pre-wrap"
                 style={{ background: '#f8fafc', border: '1px solid #e8edf2', color: '#475569', maxHeight: 120, overflowY: 'auto' }}
@@ -381,4 +377,4 @@ function AlertCard({ a, expanded, setExpanded, onAprobar, onRechazar }: {
       )}
     </div>
   )
-}
+      }
