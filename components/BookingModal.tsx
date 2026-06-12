@@ -458,7 +458,10 @@ export default function BookingModal({ initialDate, onClose, onSaved }: Props) {
             <input type="date" value={date} onChange={e => setDate(e.target.value)} required
               className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none text-gray-900" />
             {esSabado && (
-              <p className="text-amber-600 text-xs mt-1">⚠ Sábado: recordá coordinar el horario."grid grid-cols-2 gap-3">
+              <p className="text-amber-600 text-xs mt-1">⚠ Sábado: recordá coordinar el horario.</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Desde</label>
               <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required
