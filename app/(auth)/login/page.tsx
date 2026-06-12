@@ -71,7 +71,6 @@ return (
 <Image src="/hero-oruga.png" alt="Oruga Cowork" fill className="object-cover object-center" priority />
 <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(7,26,46,0.88) 0%, rgba(7,26,46,0.72) 50%, rgba(7,26,46,0.82) 100%)' }} />
 </div>
-
 {showResetModal && (
 <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.65)' }}>
 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 relative">
@@ -97,7 +96,6 @@ return (
 </div>
 </div>
 )}
-
 <style>{`
 .login-btn { background: linear-gradient(270deg, #c5e84a, #7dd35a, #4ade80, #a3e635, #c5e84a); background-size: 300% 300%; animation: aurora-shift 4s ease infinite; box-shadow: 0 0 0 1px rgba(197,232,74,.4), 0 4px 20px rgba(197,232,74,.3); transition: box-shadow .2s ease, transform .1s ease; }
 .login-btn:hover:not(:disabled) { box-shadow: 0 0 0 1px rgba(197,232,74,.6), 0 6px 28px rgba(197,232,74,.45); transform: translateY(-1px); }
@@ -107,16 +105,13 @@ return (
 .glass-input::placeholder { color: rgba(255,255,255,0.35); }
 .glass-input:focus { outline: none; background: rgba(255,255,255,0.13); border-color: rgba(197,232,74,0.6); }
 `}</style>
-
 <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-8 py-12 flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
 <div className="flex-1 text-center lg:text-left">
-<div className="relative mx-auto lg:mx-0 mb-8" style={{ width: 'clamp(200px, 38vw, 360px)', height: 'clamp(65px, 12vw, 115px)' }}>
+<div className="relative mx-auto lg:mx-0 mb-6" style={{ width: 'clamp(260px, 46vw, 480px)', height: 'clamp(82px, 15vw, 155px)' }}>
 <Image src="/logo/logo-oruga-sin-fondo.png" alt="Oruga" fill className="object-contain object-center lg:object-left" style={{ filter: 'brightness(0) saturate(100%) invert(93%) sepia(26%) saturate(800%) hue-rotate(30deg) brightness(105%)' }} />
 </div>
 <p className="text-xs font-black tracking-widest uppercase mb-4" style={{ color: '#c5e84a', letterSpacing: '0.18em' }}>Coworking · Corrientes Capital</p>
-<h1 className="font-black text-white leading-[1.08] mb-5" style={{ fontSize: 'clamp(2.4rem, 5vw, 4rem)', fontStyle: 'italic' }}>
-El espacio donde<br /><span style={{ color: '#c5e84a' }}>trabajan</span> las ideas.
-</h1>
+<h1 className="font-black text-white leading-[1.08] mb-5" style={{ fontSize: 'clamp(2.4rem, 5vw, 4rem)', fontStyle: 'italic' }}>El espacio donde<br /><span style={{ color: '#c5e84a' }}>trabajan</span> las ideas.</h1>
 <p className="text-blue-200 leading-relaxed max-w-sm mx-auto lg:mx-0" style={{ fontSize: 'clamp(0.9rem, 1.5vw, 1.05rem)' }}>Salas, oficinas, talleres y comunidad emprendedora en Buenos Aires 678, Corrientes.</p>
 <div className="hidden lg:flex gap-3 mt-8">
 <a href="https://wa.me/5493794899843?text=Hola%20Oruga!%20Quiero%20reservar%20una%20sala" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all hover:opacity-90" style={{ background: '#25D366', color: '#fff' }}>
@@ -126,7 +121,6 @@ WhatsApp
 <Link href="/members/login" className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm border transition-all" style={{ borderColor: 'rgba(255,255,255,0.25)', color: '#fff', background: 'rgba(255,255,255,0.08)' }}>👥 Portal Members</Link>
 </div>
 </div>
-
 <div className="w-full lg:w-auto lg:min-w-[360px]">
 <div className="rounded-2xl p-7 sm:p-8" style={{ background: 'rgba(7,26,46,0.75)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: '0 24px 64px rgba(0,0,0,0.4)' }}>
 <div className="mb-6">
@@ -148,9 +142,7 @@ WhatsApp
 <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors" style={{ color: 'rgba(255,255,255,0.4)' }} tabIndex={-1}><EyeIcon open={showPassword} /></button>
 </div>
 </div>
-{error && (
-<div className="rounded-xl px-4 py-3 text-sm font-medium" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}>{error}</div>
-)}
+{error && (<div className="rounded-xl px-4 py-3 text-sm font-medium" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}>{error}</div>)}
 <button type="submit" disabled={loading} className="login-btn w-full font-bold py-3 rounded-xl text-sm mt-2 disabled:opacity-60" style={{ color: '#0a2744' }}>{loading ? 'Ingresando...' : 'Ingresar al sistema'}</button>
 </form>
 <div className="mt-5 space-y-2">
