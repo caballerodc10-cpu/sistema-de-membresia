@@ -306,7 +306,7 @@ export default function ClientRequestModal({ onClose, onSaved, initialDate, init
               Para reservar los fines de semana, consulta disponibilidad y coordina por WhatsApp con el equipo de Oruga.
             </p>
             <a
-              href={`https://wa.me/5493794899843?text=Hola%20Oruga!%20Quiero%20reservar%20la%20sala%20${encodeURIComponent(membresia!.room_name)}%20para%20el%20${encodeURIComponent(date)}%20desde%20las%20${encodeURIComponent(startTime)}%20hasta%20las%20${encodeURIComponent(endTime)}.%20Soy%20miembro%20${encodeURIComponent(userName)}.`}
+              href={`https://wa.me/5493794899843?text=Hola%20Oruga!%20Quiero%20reservar%20para%20el%20${encodeURIComponent(date)}%20desde%20las%20${encodeURIComponent(startTime)}%20hasta%20las%20${encodeURIComponent(endTime)}.%20Soy%20${encodeURIComponent(userName)}.`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm text-white mb-3"
