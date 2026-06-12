@@ -107,9 +107,12 @@ return (
 `}</style>
 <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-8 py-12 flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
 <div className="flex-1 text-center lg:text-left">
-<div className="relative mx-auto lg:mx-0 mb-6" style={{ width: 'clamp(260px, 46vw, 480px)', height: 'clamp(82px, 15vw, 155px)' }}>
-<Image src="/logo/logo-oruga-sin-fondo.png" alt="Oruga" fill className="object-contain object-center lg:object-left" style={{ filter: 'brightness(0) saturate(100%) invert(93%) sepia(26%) saturate(800%) hue-rotate(30deg) brightness(105%)' }} />
+
+{/* Logo cuadrado grande - la imagen PNG es 1772x1772 cuadrada */}
+<div className="relative mx-auto lg:mx-0 mb-6" style={{ width: 'clamp(200px, 26vw, 300px)', height: 'clamp(200px, 26vw, 300px)' }}>
+<Image src="/logo/logo-oruga-sin-fondo.png" alt="Oruga" fill className="object-contain" style={{ filter: 'brightness(0) saturate(100%) invert(93%) sepia(26%) saturate(800%) hue-rotate(30deg) brightness(105%)' }} />
 </div>
+
 <p className="text-xs font-black tracking-widest uppercase mb-4" style={{ color: '#c5e84a', letterSpacing: '0.18em' }}>Coworking · Corrientes Capital</p>
 <h1 className="font-black text-white leading-[1.08] mb-5" style={{ fontSize: 'clamp(2.4rem, 5vw, 4rem)', fontStyle: 'italic' }}>El espacio donde<br /><span style={{ color: '#c5e84a' }}>trabajan</span> las ideas.</h1>
 <p className="text-blue-200 leading-relaxed max-w-sm mx-auto lg:mx-0" style={{ fontSize: 'clamp(0.9rem, 1.5vw, 1.05rem)' }}>Salas, oficinas, talleres y comunidad emprendedora en Buenos Aires 678, Corrientes.</p>
