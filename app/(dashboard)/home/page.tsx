@@ -55,7 +55,6 @@ export default function HomePage() {
 
     const ahora = new Date().toISOString()
     const hoy = new Date().toISOString().split('T')[0]
-  const esFinDeSemana = hoy.getDay() === 0 || hoy.getDay() === 6
 
     const { data: bookings } = await supabase
       .from('bookings')
@@ -121,26 +120,6 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-
-      
-      {/* Banner fin de semana para clientes */}
-      {!isAdmin && esFinDeSemana && (
-        <a
-          href="https://wa.me/5493794899843?text=Hola%20Oruga!%20Quiero%20consultar%20disponibilidad%20para%20reservar%20una%20sala%20este%20fin%20de%20semana"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-between rounded-2xl p-4 transition-opacity hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #0a2744, #1a3d6e)', border: '1.5px solid rgba(197,232,74,0.3)' }}
-        >
-          <div>
-            <p className="text-white font-bold text-sm">&#x1F4C5; Reservas de fin de semana</p>
-            <p className="text-blue-200 text-xs mt-0.5">Los sabados y domingos consulta disponibilidad por WhatsApp</p>
-          </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm shrink-0" style={{ background: '#25D366', color: '#fff' }}>
-            WhatsApp
-          </div>
-        </a>
-      )}
 
       {/* Disponibilidad ahora */}
       <div>
@@ -241,7 +220,7 @@ export default function HomePage() {
             { href: '/bookings', label: 'Mis reservas', icon: '&#x1F4CB;', desc: 'Historial y proximas', accent: '#f59e0b' },
             isAdmin
               ? { href: '/admin/finances', label: 'Finanzas', icon: '&#x1F4B0;', desc: 'Ingresos y egresos', accent: '#10b981' }
-              : { href: '/membership', label: 'Membresía', icon: '&#x1F48E;', desc: 'Tu plan actual', accent: '#f59e0b' },
+              : { href: '/membership', label: 'Membresia', icon: '&#x2B50;', desc: 'Tu plan actual', accent: '#f59e0b' },
           ].map(item => (
             <Link key={item.href} href={item.href}
               className="group bg-white rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5"
@@ -274,7 +253,7 @@ export default function HomePage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 bg-white divide-x divide-gray-100">
             {[
               { href: '/admin/dashboard', label: 'Dashboard', icon: '&#x1F4CA;' },
-              { href: '/admin/memberships', label: 'Membresías', icon: '&#x1F48E;' },
+              { href: '/admin/memberships', label: 'Membresias', icon: '&#x2B50;' },
               { href: '/admin/finances', label: 'Finanzas', icon: '&#x1F4B0;' },
               { href: '/admin/users', label: 'Usuarios', icon: '&#x1F465;' },
             ].map(item => (
