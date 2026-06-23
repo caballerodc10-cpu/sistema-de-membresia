@@ -432,6 +432,7 @@ export default function CalendarView({ isAdmin }: { isAdmin: boolean }) {
           initialDate={newModalDate}
           onClose={() => setShowNewModal(false)}
           onSaved={() => { setShowNewModal(false); loadData() }}
+        isAdmin={isAdmin}
         />
       )}
       {clientModal && (
