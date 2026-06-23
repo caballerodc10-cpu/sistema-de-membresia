@@ -423,7 +423,6 @@ export default function BookingModal({ initialDate, onClose, onSaved, isAdmin = 
                     <option key={u.id} value={u.id}>
                       {u.full_name || u.email} — {u.plan}
                     </option>
-              {!isAdmin && (
                   ))}
                 </>
               )}
