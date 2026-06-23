@@ -437,7 +437,6 @@ export default function BookingModal({ initialDate, onClose, onSaved, isAdmin = 
               />
             )}
           </div>
-              )}
 
           {/* Sala */}
           <div>
