@@ -8,6 +8,7 @@ type Props = {
   initialDate?: string
   onClose: () => void
   onSaved: () => void
+  isAdmin?: boolean
 }
 
 // Precios reales por sala y duración — Lista de precios Mayo 2026
@@ -121,9 +122,10 @@ function getWeekBounds(dateStr: string) {
   return { from: mon.toISOString(), to: sun.toISOString() }
 }
 
-export default function BookingModal({ initialDate, onClose, onSaved }: Props) {
+export default function BookingModal({ initialDate, onClose, onSaved, isAdmin = false }: Props) {
   const [rooms, setRooms] = useState<Room[]>([])
   const [miembros, setMiembros] = useState<Miembro[]>([])
+  const [adminUsers, setAdminUsers] = useState<Array<{id: string, full_name: string, email: string, plan: string}>>([])
   const [poolColegio, setPoolColegio] = useState<PoolColegio | null>(null)
   const [roomId, setRoomId] = useState('')
   const [date, setDate] = useState(initialDate || new Date().toISOString().split('T')[0])
@@ -315,7 +317,7 @@ export default function BookingModal({ initialDate, onClose, onSaved }: Props) {
       : esMiembro ? 'membresia' : medioPago
 
     const { error: insertError } = await supabase.from('bookings').insert({
-      user_id: user.id,
+      user_id: (isAdmin && miembroSeleccionado) ? miembroSeleccionado : user.id,
       room_id: roomId,
       start_time: startTimestamp,
       end_time: endTimestamp,
@@ -357,6 +359,35 @@ export default function BookingModal({ initialDate, onClose, onSaved }: Props) {
     onSaved()
   }
 
+
+  // Cargar usuarios con membresías para el admin
+  useEffect(() => {
+    if (!isAdmin) return
+    const fetchAdminUsers = async () => {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('memberships')
+        .select('user_id, plan, profiles(id, full_name, email)')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+      if (data) {
+        const users = data.map((m: any) => ({
+          id: m.profiles?.id || m.user_id,
+          full_name: m.profiles?.full_name || m.profiles?.email || m.user_id,
+          email: m.profiles?.email || '',
+          plan: m.plan,
+        }))
+        // Dedup by id
+        const seen = new Set<string>()
+        setAdminUsers(users.filter((u: any) => {
+          if (seen.has(u.id)) return false
+          seen.add(u.id)
+          return true
+        }))
+      }
+    }
+    fetchAdminUsers()
+  }, [isAdmin])
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -369,22 +400,34 @@ export default function BookingModal({ initialDate, onClose, onSaved }: Props) {
 
           {/* Cliente */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cliente / Miembro</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{isAdmin ? 'Seleccionar cliente con membresía' : 'Cliente / Miembro'}</label>
             <select
               value={miembroSeleccionado}
               onChange={e => {
                 setMiembroSeleccionado(e.target.value)
                 if (e.target.value) setClienteNombre('')
+              if (isAdmin && e.target.value) setTipoCliente('miembro')
               }}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none text-gray-900 mb-2"
             >
-              <option value="">— Seleccioná un miembro —</option>
+              <option value="">{isAdmin ? '— Seleccioná un cliente —' : '— Seleccioná un miembro —'}</option>
               {miembros.map(m => (
                 <option key={m.id} value={m.id}>
                   {m.user_name} · {m.plan}
                   {m.hours_total > 0 ? ` · ${Math.max(0, m.hours_total - m.hours_used)}hs disp.` : ''}
                 </option>
               ))}
+              {isAdmin && adminUsers.length > 0 && (
+                <>
+                  <option disabled>─── Miembros con membresía ───</option>
+                  {adminUsers.map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.full_name || u.email} — {u.plan}
+                    </option>
+              {!isAdmin && (
+                  ))}
+                </>
+              )}
             </select>
             {!miembroSeleccionado && (
               <input
@@ -396,6 +439,7 @@ export default function BookingModal({ initialDate, onClose, onSaved }: Props) {
               />
             )}
           </div>
+              )}
 
           {/* Sala */}
           <div>
