@@ -368,7 +368,6 @@ export default function BookingModal({ initialDate, onClose, onSaved, isAdmin = 
       const { data } = await supabase
         .from('memberships')
         .select('user_id, plan, profiles(id, full_name, email)')
-        .eq('status', 'active')
         .order('created_at', { ascending: false })
       if (data) {
         const users = data.map((m: any) => ({
